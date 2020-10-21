@@ -13,59 +13,75 @@ import matplotlib.pyplot as plt
 import turtle
 
 
+def transform_point_perspective(point_original, perspective_center):
+    point = [perspective_center[0] + (point_original[0] - perspective_center[0]) / (
+            1 - point_original[2] / perspective_center[2]),
+             perspective_center[1] + (point_original[1] - perspective_center[1]) / (
+                     1 - point_original[2] / perspective_center[2])]
+
+    return point
+
+
 class SubWindow(object):
     def __init__(self):
         self.name = ''
         self.zero_point = (0.0, 0.0)
-        self.x_axis_name = ''
-        self.y_axis_name = ''
+        self.width = 0.0
+        self.height = 0.0
+        self.x_axis_name = 'X'
+        self.y_axis_name = 'Y'
 
 
 class Engine(object):
-    def __init__(self, window_width, window_height, background_color, perspective_depth):
+    def __init__(self, window_width, window_height, background_color):
+        self.x_scale = 1.0
+        self.y_scale = 1.0
         self.window_width = window_width
         self.window_height = window_height
         self.background_color = background_color
 
         self.sub_windows = (SubWindow(), SubWindow(), SubWindow(), SubWindow())
 
-    def setup_sub_window(self, sub_window_number, name, zero_point, x_axis_name, y_axis_name):
+    def setup_sub_window(self, sub_window_number, name, zero_point, width, height, x_axis_name, y_axis_name):
         self.sub_windows[sub_window_number - 1].name = name
         self.sub_windows[sub_window_number - 1].zero_point = zero_point
+        self.sub_windows[sub_window_number - 1].width = width
+        self.sub_windows[sub_window_number - 1].height = height
         self.sub_windows[sub_window_number - 1].x_axis_name = x_axis_name
         self.sub_windows[sub_window_number - 1].y_axis_name = y_axis_name
 
-    def transform_point_perspective(self, point_original, perspective_center):
-        point = [perspective_center[0] + (point_original[0] - perspective_center[0]) / (
-                1 - point_original[2] / perspective_center[2]),
-                 perspective_center[1] + (point_original[1] - perspective_center[1]) / (
-                         1 - point_original[2] / perspective_center[2])]
-
-        return point
-
     def draw_points(self, sub_window, points, color):
-        return 0
+        pass
 
     def draw_line(self, sub_window, points, color):
-        return 0
+        pass
 
     def draw_polygon(self, sub_window, points, outline_color, fill_color):
-        return 0
+        pass
+
+    def draw_text(self, sub_window, text, position):
+        pass
+
+    def draw_titles(self):
+        pass
+
+    def draw_aux(self):
+        pass
 
     def show(self):
-        return 0
+        pass
 
 
 class MathPlotLibEngine(Engine):
-    def __init__(self, window_width, window_height, background_color, perspective_depth):
-        super(MathPlotLibEngine, self).__init__(window_width, window_height, background_color, perspective_depth)
-        # plt.axis([0.0, self.window_width, self.window_height, 0.0])
-
+    def __init__(self, window_width, window_height, background_color):
+        super(MathPlotLibEngine, self).__init__(window_width, window_height, background_color)
         self.__fig, self.__axs = plt.subplots(2, 2)
 
-    def setup_sub_window(self, sub_window_number, name, zero_point, x_axis_name, y_axis_name):
-        super(MathPlotLibEngine, self).setup_sub_window(sub_window_number, name, zero_point, x_axis_name, y_axis_name)
-        self.__axs[(sub_window_number - 1) // 2, (sub_window_number - 1) % 2].set_title("test")
+    def setup_sub_window(self, sub_window_number, name, zero_point, width, height, x_axis_name, y_axis_name):
+        super(MathPlotLibEngine, self).setup_sub_window(sub_window_number, name, zero_point, width, height, x_axis_name, y_axis_name)
+        self.__axs[(sub_window_number - 1) // 2, (sub_window_number - 1) % 2].set_title(name)
+        self.__axs[(sub_window_number - 1) // 2, (sub_window_number - 1) % 2].set_aspect('equal')
+        self.__axs[(sub_window_number - 1) // 2, (sub_window_number - 1) % 2].invert_yaxis()
 
     def draw_points(self, sub_window, points, color):
         x = []
@@ -77,16 +93,11 @@ class MathPlotLibEngine(Engine):
 
         self.__axs[(sub_window - 1) // 2, (sub_window - 1) % 2].plot(x, y, color=color)
 
-        return 0
-
     def draw_line(self, sub_window, points, color):
         self.__axs[(sub_window - 1) // 2, (sub_window - 1) % 2].plot([points[0][0], points[1][0]],
                                                                      [points[0][1], points[1][1]], color=color)
 
-        return 0
-
     def draw_polygon(self, sub_window, points, outline_color, fill_color):
-        # polygon = plt.Polygon(points, True)
         x = []
         y = []
         for point in points:
@@ -96,23 +107,22 @@ class MathPlotLibEngine(Engine):
 
         self.__axs[(sub_window - 1) // 2, (sub_window - 1) % 2].fill(x, y, facecolor=fill_color,
                                                                      edgecolor=outline_color)
-        return 0
 
     def show(self):
         plt.show()
-        return 0
 
 
 class GraphicsEngine(Engine):
-    def __init__(self, window_width, window_height, background_color, perspective_depth):
-        super(GraphicsEngine, self).__init__(window_width, window_height, background_color, perspective_depth)
+    def __init__(self, window_width, window_height, background_color):
+        super(GraphicsEngine, self).__init__(window_width, window_height, background_color)
         self.win = glib.GraphWin("Lab 1. Task 1", window_width, window_height)
         self.win.setBackground(background_color)
 
     def draw_points(self, sub_window, points, color):
         for point in points:
-            p = glib.Point(self.sub_windows[sub_window - 1].zero_point[0] + point[0],
-                           self.sub_windows[sub_window - 1].zero_point[1] + point[1])
+            p = glib.Point(self.sub_windows[sub_window - 1].zero_point[0] + point[0] * self.x_scale,
+                           self.sub_windows[sub_window - 1].zero_point[1] + point[1] * self.y_scale)
+            p.setOutline(color)
             p.draw(self.win)
 
     def draw_line(self, sub_window, points, color):
@@ -122,7 +132,7 @@ class GraphicsEngine(Engine):
             glib.Point(self.sub_windows[sub_window - 1].zero_point[0] + points[1][0],
                        self.sub_windows[sub_window - 1].zero_point[1] + points[1][1]))
 
-        line.setFill(color)
+        line.setOutline(color)
         line.setWidth(3)
         line.draw(self.win)
 
@@ -138,25 +148,65 @@ class GraphicsEngine(Engine):
         polygon.setWidth(3)
         polygon.draw(self.win)
 
-        return 0
+    def draw_text(self, sub_window, text, position):
+        label = glib.Text(
+            glib.Point(self.sub_windows[sub_window - 1].zero_point[0] + position[0],
+                       self.sub_windows[sub_window - 1].zero_point[1] + position[1]), text)
+        label.draw(self.win)
+
+    def draw_titles(self):
+        label = glib.Text(glib.Point(self.window_width/2, 10.0), 'Graphics lib')
+        label.draw(self.win)
+
+        i = 1
+        while i <= len(self.sub_windows):
+            self.draw_text(i, self.sub_windows[i - 1].name, (self.sub_windows[i - 1].width/3, 10.0))
+            i = i + 1
+
+    def draw_aux(self):
+        i = 0
+        while i < len(self.sub_windows):
+            self.draw_line(i, ((0.0, 0.0), (self.window_width / 3, 0.0)), 'gray')
+            self.draw_line(i, ((0.0, -self.window_height / 8), (0.0, self.window_height / 8)), 'gray')
+            self.draw_text(i, 'X', (self.window_width / 3, 20.0))
+            self.draw_text(i, 'Y', (-20.0, -self.window_height / 8))
+            i = i + 1
 
     def show(self):
         self.win.getMouse()
         self.win.close()
-        return 0
 
 
 class TurtleEngine(Engine):
-    def __init__(self, window_width, window_height, background_color, perspective_depth):
-        super(TurtleEngine, self).__init__(window_width, window_height, background_color, perspective_depth)
+    def __init__(self, window_width, window_height, background_color):
+        super(TurtleEngine, self).__init__(window_width, window_height, background_color)
 
         turtle.screensize(self.window_width, self.window_height)
+        turtle.pensize(3)
         turtle.radians()
         turtle.penup()
 
+    def draw_points(self, sub_window, points, color):
+        turtle.pencolor(color)
+        turtle.goto(
+            self.sub_windows[sub_window - 1].zero_point[0] + points[0][0] * self.x_scale - self.window_width / 2,
+            self.window_height / 2 - self.sub_windows[sub_window - 1].zero_point[1] - points[0][1] * self.y_scale)
+        turtle.pendown()
+        i = 1
+        while i < len(points) - 1:
+            turtle.goto(
+                self.sub_windows[sub_window - 1].zero_point[0] + points[i][0] * self.x_scale - self.window_width / 2,
+                self.window_height / 2 - self.sub_windows[sub_window - 1].zero_point[1] - points[i + 1][
+                    1] * self.y_scale)
+            i = i + 1
+
+        turtle.penup()
+
     def draw_line(self, sub_window, points, color):
-        moved_point_from = [points[0][0] - self.window_width / 2, points[0][1] - self.window_height / 2]
-        moved_point_to = [points[1][0] - self.window_width / 2, points[1][1] - self.window_height / 2]
+        moved_point_from = [self.sub_windows[sub_window - 1].zero_point[0] + points[0][0] - self.window_width / 2,
+                            self.window_height/2 - self.sub_windows[sub_window - 1].zero_point[1] - points[0][1]]
+        moved_point_to = [self.sub_windows[sub_window - 1].zero_point[0] + points[1][0] - self.window_width / 2,
+                          self.window_height/2 - self.sub_windows[sub_window - 1].zero_point[1] - points[1][1]]
 
         length = sqrt((moved_point_to[0] - moved_point_from[0]) * (moved_point_to[0] - moved_point_from[0])
                       + (moved_point_to[1] - moved_point_from[1]) * (moved_point_to[1] - moved_point_from[1]))
@@ -166,7 +216,7 @@ class TurtleEngine(Engine):
 
         turtle.goto(moved_point_from[0], moved_point_from[1])
         turtle.setheading(0)
-        turtle.color(color)
+        turtle.pencolor(color)
         turtle.pendown()
         turtle.left(angle)
         turtle.forward(length)
@@ -185,55 +235,51 @@ class TurtleEngine(Engine):
 
         turtle.end_fill()
 
-    def show(self):
-        # turtle.showturtle()
-        return 0
+    def draw_text(self, sub_window, text, position):
+        turtle.goto(self.sub_windows[sub_window - 1].zero_point[0] + position[0] - self.window_width / 2,
+                    self.window_height / 2 - self.sub_windows[sub_window - 1].zero_point[1] - position[1])
+        turtle.write(text)
+
+    def draw_titles(self):
+        turtle.goto(- self.window_width / 2, self.window_height / 2)
+        turtle.write('Turtle lib')
+
+        i = 1
+        while i <= len(self.sub_windows):
+            self.draw_text(i, self.sub_windows[i - 1].name, (self.window_width / 4, -self.window_height / 8))
+            i = i + 1
+
+    def draw_aux(self):
+        i = 0
+        while i < len(self.sub_windows):
+            self.draw_line(i, ((0.0, 0.0), (self.window_width / 3, 0.0)), 'gray')
+            self.draw_line(i, ((0.0, -self.window_height / 8), (0.0, self.window_height / 8)), 'gray')
+            self.draw_text(i, 'X', (self.window_width / 3, 20.0))
+            self.draw_text(i, 'Y', (-20.0, -self.window_height / 8))
+            i = i + 1
 
 
-def draw_task_one_figure_one(engine, width, height, depth_step, count, inner_color, outer_color):
-    def draw_with_perspective(sub_window_num, perspective_depth):
-        engine.setup_sub_window(1, "Triangle - filled", (0.0, 0.0), "", "")
-        engine.setup_sub_window(2, "Triangle - outlined", (engine.window_width/2, 0.0), "", "")
-        engine.setup_sub_window(3, "Square - filled", (0.0, engine.window_height/2), "", "")
-        engine.setup_sub_window(4, "Square - outlined", (engine.window_width/2, engine.window_height/2), "", "")
+def draw_task_one(engine):
+    offset_x = 50.0
+    offset_y = 100.0
+
+    engine.setup_sub_window(1, "Triangle - filled", (offset_x, offset_y), "", "")
+    engine.setup_sub_window(2, "Triangle - outlined", (offset_x + engine.window_width / 2, offset_y), "", "")
+    engine.setup_sub_window(3, "Square - filled", (offset_x, offset_y + engine.window_height / 2), "", "")
+    engine.setup_sub_window(4, "Square - outlined", (offset_x + engine.window_width / 2, offset_y + engine.window_height / 2), "", "")
+
+    engine.draw_titles()
+
+    def draw_figure_two_with_perspective(sub_window_num, perspective_depth, width, height, depth_step, count,
+                                         inner_color, outer_color):
 
         perspective_center = (width / 2, height / 2, perspective_depth)
 
         for i in range(0, count):
-            p_top = engine.transform_point_perspective(
-                (width / 2, 0.0, i * depth_step), perspective_center)
-            p_bottom_left = engine.transform_point_perspective(
-                (0.0, height, i * depth_step), perspective_center)
-            p_bottom_right = engine.transform_point_perspective(
-                (width, height, i * depth_step), perspective_center)
-
-            if i == 0 or i == count - 1:
-                color = outer_color
-            else:
-                color = inner_color
-
-            engine.draw_polygon(sub_window_num, [p_top, p_bottom_left, p_bottom_right], color,
-                                glib.color_rgb(255, 255, 190))
-
-    draw_with_perspective(1, -30)
-    draw_with_perspective(2, -100)
-
-
-def draw_task_one_figure_two(engine, width, height, depth_step, count, inner_color, outer_color):
-    def draw_with_perspective(sub_window_num, perspective_depth):
-        engine.setup_sub_window(1, "Triangle - filled", (0.0, 0.0), "", "")
-        engine.setup_sub_window(2, "Triangle - outlined", (engine.window_width / 2, 0.0), "", "")
-        engine.setup_sub_window(3, "Square - filled", (0.0, engine.window_height / 2), "", "")
-        engine.setup_sub_window(4, "Square - outlined", (engine.window_width / 2, engine.window_height / 2), "", "")
-
-        perspective_center = (width / 2, height / 2,
-                              perspective_depth)
-
-        for i in range(0, count):
-            p_top_left = engine.transform_point_perspective((0.0, 0.0, i * depth_step), perspective_center)
-            p_top_right = engine.transform_point_perspective((width, 0.0, i * depth_step), perspective_center)
-            p_bottom_left = engine.transform_point_perspective((0.0, height, i * depth_step), perspective_center)
-            p_bottom_right = engine.transform_point_perspective((width, height, i * depth_step), perspective_center)
+            p_top_left = transform_point_perspective((0.0, 0.0, i * depth_step), perspective_center)
+            p_top_right = transform_point_perspective((width, 0.0, i * depth_step), perspective_center)
+            p_bottom_left = transform_point_perspective((0.0, height, i * depth_step), perspective_center)
+            p_bottom_right = transform_point_perspective((width, height, i * depth_step), perspective_center)
 
             if i == 0 or i == count - 1:
                 color = outer_color
@@ -245,16 +291,35 @@ def draw_task_one_figure_two(engine, width, height, depth_step, count, inner_col
             engine.draw_line(sub_window_num, [p_bottom_left, p_bottom_right], color)
             engine.draw_line(sub_window_num, [p_top_right, p_bottom_right], color)
 
-    draw_with_perspective(3, -30)
-    draw_with_perspective(4, -100)
+    draw_figure_two_with_perspective(3, -30, 200.0, 200.0, 20.0, 5, 'green', 'blue')
+    draw_figure_two_with_perspective(4, -100, 200.0, 200.0, 20.0, 5, 'green', 'blue')
+
+    def draw_figure_one_with_perspective(sub_window_num, perspective_depth, width, height, depth_step, count,
+                                         inner_color, outer_color):
+
+        perspective_center = (width / 2, height / 2, perspective_depth)
+
+        for i in range(0, count):
+            p_top = transform_point_perspective(
+                (width / 2, 0.0, i * depth_step), perspective_center)
+            p_bottom_left = transform_point_perspective(
+                (0.0, height, i * depth_step), perspective_center)
+            p_bottom_right = transform_point_perspective(
+                (width, height, i * depth_step), perspective_center)
+
+            if i == 0 or i == count - 1:
+                color = outer_color
+            else:
+                color = inner_color
+
+            engine.draw_polygon(sub_window_num, [p_top, p_bottom_left, p_bottom_right], color,
+                                glib.color_rgb(255, 255, 190))
+
+    draw_figure_one_with_perspective(1, -30, 300.0, 200.0, 20.0, 4, 'green', 'blue')
+    draw_figure_one_with_perspective(2, -100, 300.0, 200.0, 20.0, 4, 'green', 'blue')
 
 
 def draw_task_two(engine):
-    engine.setup_sub_window(1, "Sin", (0.0, 0.0), "", "")
-    engine.setup_sub_window(2, "Tan", (engine.window_width / 2, 0.0), "", "")
-    engine.setup_sub_window(3, "Ctan", (0.0, engine.window_height / 2), "", "")
-    engine.setup_sub_window(4, "Sum", (engine.window_width / 2, engine.window_height / 2), "", "")
-
     def with_options(sub_window, monochrome, lines):
         def rotate_point(cx, cy, x, y, rot_angle):
             s = sin(rot_angle)
@@ -272,7 +337,7 @@ def draw_task_two(engine):
         outline_colors = ['blue', 'green', 'red', 'yellow']
         fill_colors = ['yellow', 'red', 'green', 'blue']
 
-        center_point = (engine.window_width / 2, engine.window_height / 2)
+        center_point = (engine.window_width / 4, engine.window_height / 4)
 
         shift = height / 32
 
@@ -301,16 +366,30 @@ def draw_task_two(engine):
 
             angle = angle + pi / 2
 
+    engine.setup_sub_window(1, "Monochrome-polygon", (0.0, 0.0), "", "")
+    engine.setup_sub_window(2, "Monochrome-lines", (engine.window_width / 2, 0.0), "", "")
+    engine.setup_sub_window(3, "Color-lines", (0.0, engine.window_height / 2), "", "")
+    engine.setup_sub_window(4, "Color-polygon", (engine.window_width / 2, engine.window_height / 2), "", "")
+
+    engine.draw_titles()
+
     with_options(1, True, False)
     with_options(2, True, True)
     with_options(3, False, True)
     with_options(4, False, False)
 
-def draw_task_three(engine, width, height):
-    engine.setup_sub_window(1, "Sin", (0.0, 0.0), "", "")
-    engine.setup_sub_window(2, "Tan", (engine.window_width / 2, 0.0), "", "")
-    engine.setup_sub_window(3, "Ctan", (0.0, engine.window_height / 2), "", "")
-    engine.setup_sub_window(4, "Sum", (engine.window_width / 2, engine.window_height / 2), "", "")
+
+def draw_task_three(engine):
+    offset_x = 50.0
+    offset_y = 100.0
+
+    engine.setup_sub_window(1, "Sin", (offset_x, offset_y), "", "")
+    engine.setup_sub_window(2, "Tan", (offset_x + engine.window_width / 2, offset_y), "", "")
+    engine.setup_sub_window(3, "Ctg", (offset_x, offset_y + engine.window_height / 2), "", "")
+    engine.setup_sub_window(4, "Sum", (offset_x + engine.window_width / 2, offset_y + engine.window_height / 2), "", "")
+
+    engine.draw_titles()
+    engine.draw_aux()
 
     # Student number
     a = 10.0
@@ -358,6 +437,8 @@ def draw_task_three(engine, width, height):
 
         x = x + step
 
+    engine.x_scale = 10.0
+    engine.y_scale = 10.0
     engine.draw_points(1, points_one, color_one)
     engine.draw_points(2, points_two, color_two)
     engine.draw_points(3, points_three, color_three)
@@ -367,15 +448,14 @@ def draw_task_three(engine, width, height):
 
 
 def main():
-    # engine = MathPlotLibEngine(640, 480, glib.color_rgb(255, 255, 255), -30)
-    engine = GraphicsEngine(640, 480, glib.color_rgb(255, 255, 255), -30)
-    # engine = TurtleEngine(640, 480, glib.color_rgb(255, 255, 255), -30)
+    # engine = MathPlotLibEngine(640, 480, 'white')
+    engine = GraphicsEngine(1024, 768, 'white')
+    # engine = TurtleEngine(640, 480, 'white')
 
-    # draw_task_one_figure_one(engine, 300.0, 200.0, 20.0, 4,
-    #                         glib.color_rgb(0, 255, 0), glib.color_rgb(0, 0, 255))
-    # draw_task_one_figure_two(engine, 200.0, 200.0, 20.0, 5, glib.color_rgb(0, 255, 0), glib.color_rgb(0, 0, 255))
-    draw_task_two(engine)
-    # draw_task_three(engine, 100, 100)
+    draw_task_one(engine)
+    # draw_task_two(engine)
+    # draw_task_three(engine)
+
     engine.show()
 
 
