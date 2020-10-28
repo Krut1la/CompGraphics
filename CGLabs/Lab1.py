@@ -164,7 +164,13 @@ class Engine(object):
         Draws auxiliary elements.
         :return:
         """
-        pass
+        i = 0
+        while i < len(self.sub_windows):
+            self.draw_line(i, ((0.0, 0.0), (self.window_width / 3, 0.0)), 'gray')
+            self.draw_line(i, ((0.0, -self.window_height / 8), (0.0, self.window_height / 8)), 'gray')
+            self.draw_text(i, 'X', (self.window_width / 3, 20.0))
+            self.draw_text(i, 'Y', (-20.0, -self.window_height / 8))
+            i = i + 1
 
     def show(self):
         """
@@ -222,6 +228,9 @@ class MathPlotLibEngine(Engine):
         self.__axs[(sub_window - 1) // 2, (sub_window - 1) % 2].fill(x, y, facecolor=fill_color,
                                                                      edgecolor=outline_color)
 
+    def draw_aux(self):
+        pass
+
     def show(self):
         plt.show()
 
@@ -277,15 +286,6 @@ class GraphicsEngine(Engine):
         label = glib.Text(
             glib.Point(position[0], position[1]), text)
         label.draw(self.win)
-
-    def draw_aux(self):
-        i = 0
-        while i < len(self.sub_windows):
-            self.draw_line(i, ((0.0, 0.0), (self.window_width / 3, 0.0)), 'gray')
-            self.draw_line(i, ((0.0, -self.window_height / 8), (0.0, self.window_height / 8)), 'gray')
-            self.draw_text(i, 'X', (self.window_width / 3, 20.0))
-            self.draw_text(i, 'Y', (-20.0, -self.window_height / 8))
-            i = i + 1
 
     def show(self):
         self.win.getMouse()

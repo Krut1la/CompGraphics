@@ -1,7 +1,11 @@
-# This is a sample Python script.
+"""
+Prog:   Lab0.py
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+Auth:   Oleksii Krutko, IO-z91
+
+Desc:   Computer graphics Lab 0. 2020
+
+"""
 
 
 def print_hi(name):
