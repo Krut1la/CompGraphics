@@ -1,0 +1,393 @@
+"""
+Prog:   Lab2.py
+
+Auth:   Oleksii Krutko, IO-z91
+
+Desc:   Computer graphics Lab 3. 2020
+
+"""
+
+import time
+import copy
+import tkinter as tk
+import numpy as np
+from math import *
+from threading import Thread
+
+
+class Vector3(object):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    @staticmethod
+    def unit_x():
+        return Vector3(1.0, 0.0, 0.0)
+
+    @staticmethod
+    def unit_y():
+        return Vector3(0.0, 1.0, 0.0)
+
+    @staticmethod
+    def unit_z():
+        return Vector3(0.0, 0.0, 1.0)
+
+
+class MatrixAffine4x4(object):
+    def __init__(self):
+        self.data = np.array([[1.0, 0.0, 0.0, 0.0],
+                              [0.0, 1.0, 0.0, 0.0],
+                              [0.0, 0.0, 1.0, 0.0],
+                              [0.0, 0.0, 0.0, 1.0]])
+
+    @staticmethod
+    def build_identity():
+        m = MatrixAffine4x4()
+        m.data = np.array([[1.0, 0.0, 0.0, 0.0],
+                           [0.0, 1.0, 0.0, 0.0],
+                           [0.0, 0.0, 1.0, 0.0],
+                           [0.0, 0.0, 0.0, 1.0]])
+        return m
+
+    @staticmethod
+    def build_xy_orthogonal_proj():
+        m = MatrixAffine4x4()
+        m.data = np.array([[1.0, 0.0, 0.0, 0.0],
+                           [0.0, 1.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 1.0]])
+        return m
+
+    @staticmethod
+    def build_rotation(angle, axis):
+        s = axis.x + axis.y + axis.z
+        sq = sqrt(s)
+        n1 = axis.x / sq
+        n2 = axis.y / sq
+        n3 = axis.z / sq
+
+        m = MatrixAffine4x4()
+        m.data = np.array(
+            [[n1 * n1 + (1 - n1 * n1) * cos(angle),         n1 * n2 * (1 - cos(angle)) - n3 * sin(angle),  n1 * n3 * (1 - cos(angle)) + n2 * sin(angle), 0.0],
+             [n1 * n2 * (1 - cos(angle)) + n3 * sin(angle), n2 * n2 + (1 - n2 * n2) * cos(angle),          n2 * n3 * (1 - cos(angle)) - n1 * sin(angle), 0.0],
+             [n1 * n3 * (1 - cos(angle)) - n2 * sin(angle), n2 * n3 * (1 - cos(angle)) + n1 * sin(angle),  n3 * n3 + (1 - n3 * n3) * cos(angle),        0.0],
+             [0.0, 0.0, 0.0, 1.0]])
+
+        return m
+
+    @staticmethod
+    def build_scale(sx, sy, sz):
+        m = MatrixAffine4x4()
+        m.data = np.array([[sx, 0.0, 0.0, 0.0],
+                           [0.0, sy, 0.0, 0.0],
+                           [0.0, 0.0, sz, 0.0],
+                           [0.0, 0.0, 1.0, 0.0]])
+        return m
+
+    @staticmethod
+    def build_translation(dx, dy, dz):
+        m = MatrixAffine4x4()
+        m.data = np.array([[0.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 0.0],
+                           [dx, dy, dz, 0.0]])
+        return m
+
+
+class Transformable(object):
+    """
+    Interface for geometry objects that can be transformed.
+    """
+    def transform(self, matrix):
+        """
+        Uses matrix operations to transform.
+        :param matrix: transformation matrix
+        :return:
+        """
+        pass
+
+    def get_transformed(self, matrix):
+        """
+        Uses matrix operations to transform.
+        :param matrix: transformation matrix
+        :return:
+        """
+        pass
+
+
+class Vertex3d(Transformable):
+    """
+    Represents a single 3d vertex.
+    """
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def transform(self, matrix):
+        vector = np.array([self.x, self.y, self.z, 1.0])
+        vector.dot(matrix.data, vector)
+        self.x = vector[0]
+        self.y = vector[1]
+        self.z = vector[2]
+
+    def get_transformed(self, matrix):
+        vector = np.array([self.x, self.y, self.z, 1.0])
+        vector.dot(matrix.data, vector)
+        return Vertex3d(vector[0], vector[1], vector[2])
+
+
+class Edge(object):
+    """
+    Represents an edge between two vertices.
+    """
+    def __init__(self, vid_from, vid_to):
+        self.vid_from = vid_from
+        self.vid_to = vid_to
+
+
+class Model(Transformable):
+    """
+    Represents 3d geometry objects.
+    """
+    def __init__(self):
+        self._vertices = []
+        self._edges = []
+
+    def transform(self, matrix):
+        for vertex in self._vertices:
+            vertex.transform(matrix)
+
+    def add_vertex(self, vertex):
+        self._vertices.append(vertex)
+        return len(self._vertices) - 1
+
+    def add_edge(self, edge):
+        self._edges.append(edge)
+        return len(self._edges) - 1
+
+    def get_vertices(self):
+        return self._vertices
+
+    def get_edges(self):
+        return self._edges
+
+    def clear(self):
+        self._vertices.clear()
+        self._edges.clear()
+
+
+class GraphicsEngine2d(object):
+    """
+    Simple 3d graphics based on Tk.
+    """
+    def __init__(self, width, height, title):
+        self.__root = tk.Tk()
+        self.__root.title(title)
+        self.__root.geometry(str(width) + "x" + str(height) + "+10+20")
+
+        self._is_animating = tk.IntVar(self.__root, 0)
+
+        self._projection_matrix = MatrixAffine4x4.build_xy_orthogonal_proj()
+        self._model = None
+
+        self.__init_ui()
+
+    def _start_animation(self):
+        self._animation_thread = Thread(target=self._animate, daemon=True)
+        self._animation_thread.start()
+
+    def set_model(self, model):
+        self._model = copy.deepcopy(model)
+
+    def _draw_frame(self):
+        if self._model is not None:
+            self.clear()
+            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_x())
+            self._model.transform(rot)
+            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_z())
+            self._model.transform(rot)
+            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_y())
+            self._model.transform(rot)
+            self.draw_model(self._model, 3, "blue", True)
+            self._canvas.update_idletasks()
+            # self._canvas.after(0, self._draw_frame())
+
+    def _animate(self):
+        while self._is_animating.get() == 1:
+            # self._draw_frame()
+            # self._canvas.after(0, self._draw_frame())
+            self._canvas.after(0, lambda : self._draw_frame())
+            # self._canvas.update_idletasks()
+            time.sleep(0.01)
+
+    def __init_ui(self):
+        """
+        Simple test framework UI
+        :return:
+        """
+        main_frame = tk.Frame(self.__root, bg="white")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame.grid_columnconfigure(0, weight=2)
+        main_frame.grid_columnconfigure(1, weight=1)
+        main_frame.grid_rowconfigure(0, weight=1)
+        render_frame = tk.Frame(main_frame, bg="white")
+        render_frame.grid(row=0, column=0, sticky="nsew")
+        render_label = tk.Label(render_frame, text="Scene", bg="white", fg="gray", font=("Helvetica", 20))
+        render_label.pack(side=tk.TOP)
+        self._canvas = tk.Canvas(render_frame, bg="white")
+        self._canvas.pack(fill=tk.BOTH, expand=True)
+        control_frame = tk.Frame(main_frame, bg="gray")
+        control_frame.grid(row=0, column=1, sticky="nsew")
+        control_frame.grid_columnconfigure(0, weight=1)
+        control_frame.grid_rowconfigure(0, weight=1)
+        control_frame.grid_rowconfigure(1, weight=5)
+        control_frame.grid_rowconfigure(2, weight=4)
+        control_label = tk.Label(control_frame, text="Control", bg="gray", fg="white", font=("Helvetica", 20))
+        control_label.grid(row=0, column=0, sticky="n")
+        sliders_frame = tk.Frame(control_frame, bg="gray")
+        sliders_frame.grid(row=1, column=0, sticky="nsew")
+        sliders_frame.grid_columnconfigure(0, weight=1)
+        sliders_frame.grid_rowconfigure(0, weight=1)
+        sliders_frame.grid_rowconfigure(1, weight=1)
+        sliders_frame.grid_rowconfigure(2, weight=1)
+        sliders_frame.grid_rowconfigure(3, weight=1)
+        sliders_frame.grid_rowconfigure(4, weight=1)
+        sliders_frame.grid_rowconfigure(5, weight=1)
+        sliders_frame.grid_rowconfigure(6, weight=1)
+        sliders_frame.grid_rowconfigure(7, weight=1)
+        sliders_frame.grid_rowconfigure(8, weight=1)
+        sliders_frame.grid_rowconfigure(9, weight=1)
+        sliders_frame.grid_rowconfigure(10, weight=1)
+        sliders_frame.grid_rowconfigure(11, weight=1)
+
+
+        buttons_frame = tk.Frame(control_frame, bg="gray")
+        buttons_frame.grid(row=2, column=0, sticky="nsew")
+        buttons_frame.grid_columnconfigure(0, weight=1)
+        buttons_frame.grid_rowconfigure(0, weight=1)
+        buttons_frame.grid_rowconfigure(1, weight=1)
+        buttons_frame.grid_rowconfigure(2, weight=1)
+        buttons_frame.grid_rowconfigure(3, weight=1)
+
+        animation_on_radio = tk.Radiobutton(buttons_frame, text="On", variable=self._is_animating, value=1,
+                                            indicatoron=0, command=self._start_animation)
+        animation_on_radio.grid(row=0, column=0, sticky="new")
+        animation_off_radio = tk.Radiobutton(buttons_frame, text="Off", variable=self._is_animating, value=0,
+                                            indicatoron=0)
+        animation_off_radio.grid(row=1, column=0, sticky="new")
+
+        reset_button = tk.Button(buttons_frame, fg="black", text="Reset",
+                                 command=self._reset)
+        reset_button.grid(row=2, column=0, sticky="sew")
+        quit_button = tk.Button(buttons_frame, fg="black", text="Quit", command=quit)
+        quit_button.grid(row=3, column=0, sticky="sew")
+
+    def _reset(self):
+        pass
+
+    def clear(self):
+        self._canvas.delete("all")
+
+    def draw_axes(self):
+        self._canvas.update()
+        width = self._canvas.winfo_width()
+        height = self._canvas.winfo_height()
+        margin_x = width / 40
+        margin_y = height / 40
+
+        self._canvas.create_line(width / 2, 0, width / 2, height, width=1)
+        self._canvas.create_line(0, height / 2, width, height / 2, width=1)
+        self._canvas.create_text(width / 2 - margin_x, margin_y, text="X")
+        self._canvas.create_text(width - margin_x, height / 2 - margin_y, text="Y")
+        self._canvas.create_text(width / 2 - margin_x, height / 2 - margin_y, text="0.0")
+
+    def draw_model(self, model, line_width, color, show_coord):
+        # self._canvas.update()
+        width = self._canvas.winfo_width()
+        height = self._canvas.winfo_height()
+
+        edges = model.get_edges()
+        vertices = model.get_vertices()
+        vertices2d = []
+        for vertex in vertices:
+
+            vertices2d.append(vertex.get_transformed(self._projection_matrix))
+        for edge in edges:
+
+            self._canvas.create_line(vertices2d[edge.vid_from].x + width / 2,
+                                     vertices2d[edge.vid_from].y + height / 2,
+                                     vertices2d[edge.vid_to].x + width / 2,
+                                     vertices2d[edge.vid_to].y + height / 2,
+                                     width=line_width,
+                                     fill=color)
+
+        if show_coord:
+            for vertex in vertices2d:
+                self._canvas.create_text(vertex.x + width / 2, vertex.y + height / 2,
+                                         text="{:.2f}".format(vertex.x) + ". " + "{:.2f}".format(vertex.y),
+                                         font=("Helvetica", 7))
+
+    def show(self):
+        # self._draw_frame()
+        self.__root.mainloop()
+
+
+def create_box_model(width, height, depth):
+    """
+    According to Lab 3. Variant 10.
+    Creates a box.
+
+    :param width:
+    :param height:
+    :param depth:
+    :return:
+    """
+    model = Model()
+    vid_1 = model.add_vertex(Vertex3d(-width / 2, -height / 2, depth / 2))
+    vid_2 = model.add_vertex(Vertex3d(width / 2, -height / 2, depth / 2))
+    vid_3 = model.add_vertex(Vertex3d(width / 2, height / 2, depth / 2))
+    vid_4 = model.add_vertex(Vertex3d(-width / 2, height / 2, depth / 2))
+    vid_5 = model.add_vertex(Vertex3d(-width / 2, -height / 2, -depth / 2))
+    vid_6 = model.add_vertex(Vertex3d(width / 2, -height / 2, -depth / 2))
+    vid_7 = model.add_vertex(Vertex3d(width / 2, height / 2, -depth / 2))
+    vid_8 = model.add_vertex(Vertex3d(-width / 2, height / 2, -depth / 2))
+    model.add_edge(Edge(vid_1, vid_2))
+    model.add_edge(Edge(vid_2, vid_3))
+    model.add_edge(Edge(vid_3, vid_4))
+    model.add_edge(Edge(vid_4, vid_1))
+    model.add_edge(Edge(vid_5, vid_6))
+    model.add_edge(Edge(vid_6, vid_7))
+    model.add_edge(Edge(vid_7, vid_8))
+    model.add_edge(Edge(vid_8, vid_5))
+    model.add_edge(Edge(vid_1, vid_5))
+    model.add_edge(Edge(vid_2, vid_6))
+    model.add_edge(Edge(vid_3, vid_7))
+    model.add_edge(Edge(vid_4, vid_8))
+
+    return model
+
+
+def main():
+    model = create_box_model(400.0, 400.0, 400.0)
+
+    engine2d = GraphicsEngine2d(1024, 768, "Lab 2. Variant 10.")
+
+    engine2d.draw_axes()
+
+    rot = MatrixAffine4x4.build_rotation(2*pi/100, Vector3.unit_y())
+
+    engine2d.set_model(model)
+    engine2d.show()
+
+
+    # rot = MatrixAffine4x4.build_rotation(pi / 4, Vector3.unit_z())
+    # model.transform(rot)
+
+    # engine2d.draw_model(model, 3, "blue", True)
+
+    # engine2d.show()
+
+
+main()

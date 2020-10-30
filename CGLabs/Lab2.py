@@ -332,19 +332,12 @@ def create_box_model(width, height):
     model = Model()
     vid_1 = model.add_vertex(Vertex2d(-width / 2, -height / 2))
     vid_2 = model.add_vertex(Vertex2d(width / 2, -height / 2))
+    vid_3 = model.add_vertex(Vertex2d(width / 2, height / 2))
+    vid_4 = model.add_vertex(Vertex2d(-width / 2, height / 2))
     model.add_edge(Edge(vid_1, vid_2))
-
-    vid_1 = model.add_vertex(Vertex2d(width / 2, -height / 2))
-    vid_2 = model.add_vertex(Vertex2d(width / 2, height / 2))
-    model.add_edge(Edge(vid_1, vid_2))
-
-    vid_1 = model.add_vertex(Vertex2d(width / 2, height / 2))
-    vid_2 = model.add_vertex(Vertex2d(-width / 2, height / 2))
-    model.add_edge(Edge(vid_1, vid_2))
-
-    vid_1 = model.add_vertex(Vertex2d(-width / 2, height / 2))
-    vid_2 = model.add_vertex(Vertex2d(-width / 2, -height / 2))
-    model.add_edge(Edge(vid_1, vid_2))
+    model.add_edge(Edge(vid_2, vid_3))
+    model.add_edge(Edge(vid_3, vid_4))
+    model.add_edge(Edge(vid_4, vid_1))
 
     return model
 
