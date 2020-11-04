@@ -33,6 +33,9 @@ class Vector3(object):
     def unit_z():
         return Vector3(0.0, 0.0, 1.0)
 
+    def neg(self):
+        return Vector3(-self.x, -self.y, -self.z)
+
 
 class MatrixAffine4x4(object):
     def __init__(self):
@@ -40,6 +43,11 @@ class MatrixAffine4x4(object):
                               [0.0, 1.0, 0.0, 0.0],
                               [0.0, 0.0, 1.0, 0.0],
                               [0.0, 0.0, 0.0, 1.0]])
+
+    def __mul__(self, other):
+        new_matrix = MatrixAffine4x4()
+        new_matrix.data = self.data.dot(other.data)
+        return new_matrix
 
     @staticmethod
     def build_identity():
@@ -51,11 +59,65 @@ class MatrixAffine4x4(object):
         return m
 
     @staticmethod
-    def build_xy_orthogonal_proj():
+    def build_xz_reflection():
+        m = MatrixAffine4x4()
+        m.data = np.array([[1.0, 0.0, 0.0, 0.0],
+                           [0.0, -1.0, 0.0, 0.0],
+                           [0.0, 0.0, 1.0, 0.0],
+                           [0.0, 0.0, 0.0, 1.0]])
+        return m
+
+    @staticmethod
+    def build_xy_reflection():
+        m = MatrixAffine4x4()
+        m.data = np.array([[1.0, 0.0, 0.0, 0.0],
+                           [0.0, 1.0, 0.0, 0.0],
+                           [0.0, 0.0, -1.0, 0.0],
+                           [0.0, 0.0, 0.0, 1.0]])
+        return m
+
+    @staticmethod
+    def build_xy_perspective_proj(p, q, r):
+        m = MatrixAffine4x4()
+        m.data = np.array([[1.0, 0.0, 0.0, p],
+                           [0.0, 1.0, 0.0, q],
+                           [0.0, 0.0, 0.0, r],
+                           [0.0, 0.0, 0.0, 1.0]])
+        return m
+
+    @staticmethod
+    def build_orthogonal_proj():
         m = MatrixAffine4x4()
         m.data = np.array([[1.0, 0.0, 0.0, 0.0],
                            [0.0, 1.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 1.0]])
+        return m
+
+    @staticmethod
+    def build_axonometric_proj(phi, eta):
+        m = MatrixAffine4x4()
+        m1 = np.array([[cos(phi), 0.0, -sin(phi), 0.0],
+                       [0.0, 1.0, 0.0, 0.0],
+                       [sin(phi), 0.0, cos(phi), 0.0],
+                       [0.0, 0.0, 0.0, 1.0]])
+
+        m2 = np.array([[1.0, 0.0, 0.0, 0.0],
+                       [0.0, cos(eta), sin(eta), 0.0],
+                       [0.0, -sin(eta), cos(eta), 0.0],
+                       [0.0, 0.0, 0.0, 1.0]])
+
+        # m.data = m1.dot(m2).dot(MatrixAffine4x4.build_orthogonal_proj().data)
+        m.data = m1.dot(m2).dot(MatrixAffine4x4.build_orthogonal_proj().data)
+
+        return m
+
+    @staticmethod
+    def build_xy_orthograph_proj():
+        m = MatrixAffine4x4()
+        m.data = np.array([[1.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 0.0],
+                           [0.0, -1.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0, 1.0]])
         return m
 
@@ -69,9 +131,12 @@ class MatrixAffine4x4(object):
 
         m = MatrixAffine4x4()
         m.data = np.array(
-            [[n1 * n1 + (1 - n1 * n1) * cos(angle),         n1 * n2 * (1 - cos(angle)) - n3 * sin(angle),  n1 * n3 * (1 - cos(angle)) + n2 * sin(angle), 0.0],
-             [n1 * n2 * (1 - cos(angle)) + n3 * sin(angle), n2 * n2 + (1 - n2 * n2) * cos(angle),          n2 * n3 * (1 - cos(angle)) - n1 * sin(angle), 0.0],
-             [n1 * n3 * (1 - cos(angle)) - n2 * sin(angle), n2 * n3 * (1 - cos(angle)) + n1 * sin(angle),  n3 * n3 + (1 - n3 * n3) * cos(angle),        0.0],
+            [[n1 * n1 + (1 - n1 * n1) * cos(angle), n1 * n2 * (1 - cos(angle)) - n3 * sin(angle),
+              n1 * n3 * (1 - cos(angle)) + n2 * sin(angle), 0.0],
+             [n1 * n2 * (1 - cos(angle)) + n3 * sin(angle), n2 * n2 + (1 - n2 * n2) * cos(angle),
+              n2 * n3 * (1 - cos(angle)) - n1 * sin(angle), 0.0],
+             [n1 * n3 * (1 - cos(angle)) - n2 * sin(angle), n2 * n3 * (1 - cos(angle)) + n1 * sin(angle),
+              n3 * n3 + (1 - n3 * n3) * cos(angle), 0.0],
              [0.0, 0.0, 0.0, 1.0]])
 
         return m
@@ -88,10 +153,10 @@ class MatrixAffine4x4(object):
     @staticmethod
     def build_translation(dx, dy, dz):
         m = MatrixAffine4x4()
-        m.data = np.array([[0.0, 0.0, 0.0, 0.0],
-                           [0.0, 0.0, 0.0, 0.0],
-                           [0.0, 0.0, 0.0, 0.0],
-                           [dx, dy, dz, 0.0]])
+        m.data = np.array([[1.0, 0.0, 0.0, 0.0],
+                           [0.0, 1.0, 0.0, 0.0],
+                           [0.0, 0.0, 1.0, 0.0],
+                           [dx, dy, dz, 1.0]])
         return m
 
 
@@ -99,6 +164,7 @@ class Transformable(object):
     """
     Interface for geometry objects that can be transformed.
     """
+
     def transform(self, matrix):
         """
         Uses matrix operations to transform.
@@ -120,6 +186,7 @@ class Vertex3d(Transformable):
     """
     Represents a single 3d vertex.
     """
+
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
@@ -128,20 +195,21 @@ class Vertex3d(Transformable):
     def transform(self, matrix):
         vector = np.array([self.x, self.y, self.z, 1.0])
         vector.dot(matrix.data, vector)
-        self.x = vector[0]
-        self.y = vector[1]
-        self.z = vector[2]
+        self.x = vector[0] / vector[3]
+        self.y = vector[1] / vector[3]
+        self.z = vector[2] / vector[3]
 
     def get_transformed(self, matrix):
         vector = np.array([self.x, self.y, self.z, 1.0])
         vector.dot(matrix.data, vector)
-        return Vertex3d(vector[0], vector[1], vector[2])
+        return Vertex3d(vector[0] / vector[3], vector[1] / vector[3], vector[2] / vector[3])
 
 
 class Edge(object):
     """
     Represents an edge between two vertices.
     """
+
     def __init__(self, vid_from, vid_to):
         self.vid_from = vid_from
         self.vid_to = vid_to
@@ -151,6 +219,7 @@ class Model(Transformable):
     """
     Represents 3d geometry objects.
     """
+
     def __init__(self):
         self._vertices = []
         self._edges = []
@@ -178,49 +247,85 @@ class Model(Transformable):
         self._edges.clear()
 
 
+class AnimationFrame(object):
+    def __init__(self, time_delay, color, transformation):
+        self.time_delay = time_delay
+        self.color = color
+        self.transformation = transformation
+
+
+class ScreenSaver(object):
+    def __init__(self, engine, model, animation):
+        self._engine = engine
+        self._model = copy.deepcopy(model)
+        self._animation = animation
+
+        self._animation_thread = Thread(target=self._animate, daemon=True)
+
+        self._engine.update()
+        self._draw_frame()
+
+    def _animate(self):
+        while self.engine._is_animating.get() == 1:
+            # self._draw_frame()
+            # self._canvas.after(0, self._draw_frame())
+            self._canvas.after(0, lambda: self._draw_frame())
+            # self._canvas.update_idletasks()
+            time.sleep(0.01)
+
+    def _draw_frame(self):
+        if self._model is not None:
+            self._engine.clear()
+            self._engine.draw_axes()
+
+            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_x())
+            self._model.transform(rot)
+            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_z())
+            # self._model.transform(rot)
+            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_y())
+            # self._model.transform(rot)
+            self._engine.draw_model(self._model, 3, "blue", False)
+            self._engine.update_idletasks()
+            # self._canvas.after(0, self._draw_frame())
+
+    def start(self):
+        self._animation_thread.start()
+        pass
+
+    def stop(self):
+        pass
+
+
 class GraphicsEngine2d(object):
     """
     Simple 3d graphics based on Tk.
     """
+
     def __init__(self, width, height, title):
         self.__root = tk.Tk()
         self.__root.title(title)
         self.__root.geometry(str(width) + "x" + str(height) + "+10+20")
 
-        self._is_animating = tk.IntVar(self.__root, 0)
+        self._is_animating = tk.BooleanVar(self.__root, False)
+        self._view_type = tk.IntVar(self.__root, 0)
+        self._projection_type = tk.IntVar(self.__root, 0)
 
-        self._projection_matrix = MatrixAffine4x4.build_xy_orthogonal_proj()
-        self._model = None
+        self._projection_types = {
+            0: MatrixAffine4x4.build_orthogonal_proj(),
+            1: MatrixAffine4x4.build_axonometric_proj(pi / 6, pi / 4),
+            2: MatrixAffine4x4.build_xy_perspective_proj(0.0, 0.0, 0.002)
+        }
+
+        self._view_types = {
+            0: MatrixAffine4x4.build_identity(),
+            1: MatrixAffine4x4.build_rotation(pi, Vector3.unit_y()),
+            2: MatrixAffine4x4.build_rotation(-pi / 2, Vector3.unit_x()),
+            3: MatrixAffine4x4.build_rotation(pi / 2, Vector3.unit_x()),
+            4: MatrixAffine4x4.build_rotation(pi / 2, Vector3.unit_y()),
+            5: MatrixAffine4x4.build_rotation(-pi / 2, Vector3.unit_y()),
+        }
 
         self.__init_ui()
-
-    def _start_animation(self):
-        self._animation_thread = Thread(target=self._animate, daemon=True)
-        self._animation_thread.start()
-
-    def set_model(self, model):
-        self._model = copy.deepcopy(model)
-
-    def _draw_frame(self):
-        if self._model is not None:
-            self.clear()
-            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_x())
-            self._model.transform(rot)
-            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_z())
-            self._model.transform(rot)
-            rot = MatrixAffine4x4.build_rotation(2 * pi / 300, Vector3.unit_y())
-            self._model.transform(rot)
-            self.draw_model(self._model, 3, "blue", True)
-            self._canvas.update_idletasks()
-            # self._canvas.after(0, self._draw_frame())
-
-    def _animate(self):
-        while self._is_animating.get() == 1:
-            # self._draw_frame()
-            # self._canvas.after(0, self._draw_frame())
-            self._canvas.after(0, lambda : self._draw_frame())
-            # self._canvas.update_idletasks()
-            time.sleep(0.01)
 
     def __init_ui(self):
         """
@@ -262,6 +367,42 @@ class GraphicsEngine2d(object):
         sliders_frame.grid_rowconfigure(10, weight=1)
         sliders_frame.grid_rowconfigure(11, weight=1)
 
+        views_label = tk.Label(sliders_frame, text="Views", bg="gray", fg="white", font=("Helvetica", 20))
+        views_label.grid(row=0, column=0, sticky="n")
+
+        view_front_radio = tk.Radiobutton(sliders_frame, text="Front", variable=self._view_type, value=0,
+                                          indicatoron=0)
+        view_front_radio.grid(row=1, column=0, sticky="new")
+        view_back_radio = tk.Radiobutton(sliders_frame, text="Back", variable=self._view_type, value=1,
+                                         indicatoron=0)
+        view_back_radio.grid(row=2, column=0, sticky="new")
+        view_up_radio = tk.Radiobutton(sliders_frame, text="Up", variable=self._view_type, value=2,
+                                       indicatoron=0)
+        view_up_radio.grid(row=3, column=0, sticky="new")
+        view_down_radio = tk.Radiobutton(sliders_frame, text="Down", variable=self._view_type, value=3,
+                                         indicatoron=0)
+        view_down_radio.grid(row=4, column=0, sticky="new")
+        view_left_radio = tk.Radiobutton(sliders_frame, text="Left", variable=self._view_type, value=4,
+                                         indicatoron=0)
+        view_left_radio.grid(row=5, column=0, sticky="new")
+        view_right_radio = tk.Radiobutton(sliders_frame, text="Right", variable=self._view_type, value=5,
+                                          indicatoron=0)
+        view_right_radio.grid(row=6, column=0, sticky="new")
+
+        projections_label = tk.Label(sliders_frame, text="Projections", bg="gray", fg="white", font=("Helvetica", 20))
+        projections_label.grid(row=7, column=0, sticky="n")
+
+        proj_orthogonal_radio = tk.Radiobutton(sliders_frame, text="Orthogonal", variable=self._projection_type,
+                                               value=0, indicatoron=0)
+        proj_orthogonal_radio.grid(row=8, column=0, sticky="new")
+
+        axonometric_orthogonal_radio = tk.Radiobutton(sliders_frame, text="Axonometric", variable=self._projection_type,
+                                                      value=1, indicatoron=0)
+        axonometric_orthogonal_radio.grid(row=9, column=0, sticky="new")
+
+        perspective_orthogonal_radio = tk.Radiobutton(sliders_frame, text="Perspective", variable=self._projection_type,
+                                                      value=2, indicatoron=0)
+        perspective_orthogonal_radio.grid(row=10, column=0, sticky="new")
 
         buttons_frame = tk.Frame(control_frame, bg="gray")
         buttons_frame.grid(row=2, column=0, sticky="nsew")
@@ -271,12 +412,9 @@ class GraphicsEngine2d(object):
         buttons_frame.grid_rowconfigure(2, weight=1)
         buttons_frame.grid_rowconfigure(3, weight=1)
 
-        animation_on_radio = tk.Radiobutton(buttons_frame, text="On", variable=self._is_animating, value=1,
+        animation_on_check = tk.Checkbutton(buttons_frame, text="Animate", variable=self._is_animating,
                                             indicatoron=0, command=self._start_animation)
-        animation_on_radio.grid(row=0, column=0, sticky="new")
-        animation_off_radio = tk.Radiobutton(buttons_frame, text="Off", variable=self._is_animating, value=0,
-                                            indicatoron=0)
-        animation_off_radio.grid(row=1, column=0, sticky="new")
+        animation_on_check.grid(row=0, column=0, sticky="new")
 
         reset_button = tk.Button(buttons_frame, fg="black", text="Reset",
                                  command=self._reset)
@@ -284,27 +422,27 @@ class GraphicsEngine2d(object):
         quit_button = tk.Button(buttons_frame, fg="black", text="Quit", command=quit)
         quit_button.grid(row=3, column=0, sticky="sew")
 
-    def _reset(self):
-        pass
+    def update(self):
+        self._canvas.update()
 
     def clear(self):
         self._canvas.delete("all")
 
     def draw_axes(self):
-        self._canvas.update()
-        width = self._canvas.winfo_width()
-        height = self._canvas.winfo_height()
-        margin_x = width / 40
-        margin_y = height / 40
+        axis_len = 200.0
 
-        self._canvas.create_line(width / 2, 0, width / 2, height, width=1)
-        self._canvas.create_line(0, height / 2, width, height / 2, width=1)
-        self._canvas.create_text(width / 2 - margin_x, margin_y, text="X")
-        self._canvas.create_text(width - margin_x, height / 2 - margin_y, text="Y")
-        self._canvas.create_text(width / 2 - margin_x, height / 2 - margin_y, text="0.0")
+        model = Model()
+        vid_zero = model.add_vertex(Vertex3d(0.0, 0.0, 0.0))
+        vid_x = model.add_vertex(Vertex3d(axis_len, 0.0, 0.0))
+        vid_y = model.add_vertex(Vertex3d(0.0, axis_len, 0.0))
+        vid_z = model.add_vertex(Vertex3d(0.0, 0.0, axis_len))
+        model.add_edge(Edge(vid_zero, vid_x))
+        model.add_edge(Edge(vid_zero, vid_y))
+        model.add_edge(Edge(vid_zero, vid_z))
+
+        self.draw_model(model, 1, "grey", True)
 
     def draw_model(self, model, line_width, color, show_coord):
-        # self._canvas.update()
         width = self._canvas.winfo_width()
         height = self._canvas.winfo_height()
 
@@ -312,10 +450,13 @@ class GraphicsEngine2d(object):
         vertices = model.get_vertices()
         vertices2d = []
         for vertex in vertices:
+            transform = MatrixAffine4x4.build_xy_reflection() * \
+                        MatrixAffine4x4.build_xz_reflection() * \
+                        self._view_types[self._view_type.get()] * \
+                        self._projection_types[self._projection_type.get()]
 
-            vertices2d.append(vertex.get_transformed(self._projection_matrix))
+            vertices2d.append(vertex.get_transformed(transform))
         for edge in edges:
-
             self._canvas.create_line(vertices2d[edge.vid_from].x + width / 2,
                                      vertices2d[edge.vid_from].y + height / 2,
                                      vertices2d[edge.vid_to].x + width / 2,
@@ -324,13 +465,14 @@ class GraphicsEngine2d(object):
                                      fill=color)
 
         if show_coord:
-            for vertex in vertices2d:
-                self._canvas.create_text(vertex.x + width / 2, vertex.y + height / 2,
-                                         text="{:.2f}".format(vertex.x) + ". " + "{:.2f}".format(vertex.y),
+            for i in range(0, len(vertices)):
+                self._canvas.create_text(vertices2d[i].x + width / 2, vertices2d[i].y + height / 2,
+                                         text="{:.2f}".format(vertices[i].x) + ". " +
+                                              "{:.2f}".format(vertices[i].y) + ". " +
+                                              "{:.2f}".format(vertices[i].z),
                                          font=("Helvetica", 7))
 
     def show(self):
-        # self._draw_frame()
         self.__root.mainloop()
 
 
@@ -370,24 +512,12 @@ def create_box_model(width, height, depth):
 
 
 def main():
-    model = create_box_model(400.0, 400.0, 400.0)
-
+    model = create_box_model(300.0, 200.0, 100.0)
     engine2d = GraphicsEngine2d(1024, 768, "Lab 2. Variant 10.")
+    animation = ()
 
-    engine2d.draw_axes()
-
-    rot = MatrixAffine4x4.build_rotation(2*pi/100, Vector3.unit_y())
-
-    engine2d.set_model(model)
-    engine2d.show()
-
-
-    # rot = MatrixAffine4x4.build_rotation(pi / 4, Vector3.unit_z())
-    # model.transform(rot)
-
-    # engine2d.draw_model(model, 3, "blue", True)
-
-    # engine2d.show()
+    screen_saver = ScreenSaver(engine2d, model, animation)
+    screen_saver.start()
 
 
 main()
