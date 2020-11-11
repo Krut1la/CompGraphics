@@ -1,5 +1,5 @@
 """
-Prog:   Lab2.py
+Prog:   Lab3.py
 
 Auth:   Oleksii Krutko, IO-z91
 
