@@ -1,27 +1,31 @@
 """
-Prog:   Lab3.py
+Prog:   Lab4.py
 
 Auth:   Oleksii Krutko, IO-z91
 
-Desc:   Computer graphics Lab 3. 2020
+Desc:   Computer graphics Lab 4. 2020
 
 """
 
+import random
+import copy
+import tkinter as tk
+import numpy as np
+from graphics3d import Vector3, BoundingBox
 from GraphicsEngine3dBase import GraphicsEngine3dBase
 from ScreenSaver import ScreenSaver, build_animation
-from graphics3d import Vector3, BoundingBox
 
 
-class GraphicsEngine3dCanvas(GraphicsEngine3dBase):
+class GraphicsEngine2dImage(GraphicsEngine3dBase):
     """
     Simple 3d graphics based on Tk.
     """
 
     def __init__(self, width, height, title):
-        super(GraphicsEngine3dCanvas, self).__init__(width, height, title)
+        super(GraphicsEngine2dImage, self).__init__(width, height, title)
 
     def _init_ui(self):
-        super(GraphicsEngine3dCanvas, self)._init_ui()
+        super(GraphicsEngine2dImage, self)._init_ui()
 
     def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color):
         self._canvas.create_line(x_from,
@@ -38,7 +42,7 @@ class GraphicsEngine3dCanvas(GraphicsEngine3dBase):
 
 
 def main():
-    engine2d = GraphicsEngine3dCanvas(1024, 768, "Lab 3. Variant 10.")
+    engine2d = GraphicsEngine2dImage(1024, 768, "Lab 4. Variant 10.")
 
     model = BoundingBox(Vector3(-150.0, -100.0, -50.0), Vector3(150.0, 100.0, 50.0))\
         .get_model()
