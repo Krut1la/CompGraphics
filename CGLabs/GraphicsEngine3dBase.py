@@ -1,3 +1,14 @@
+"""
+Prog:   GraphicsEngine3dBase.py
+
+Auth:   Oleksii Krutko, IO-z91
+
+Desc:   Computer graphics Labs. 2020
+
+Simple 3d graphics based on Tk.
+
+"""
+
 import tkinter as tk
 from math import pi
 
@@ -164,12 +175,17 @@ class GraphicsEngine3dBase(object):
         model.add_edge(Edge(vid_zero, vid_y))
         model.add_edge(Edge(vid_zero, vid_z))
 
-        self.draw_model(model, 1, "grey", True)
+        vertices = model.get_vertices()
+        for vertex in vertices:
+            vertex.color = (127, 127, 127)
 
-    def draw_model(self, model, line_width, color, show_coord):
+        self.draw_model(model, 1, True)
+
+    def draw_model(self, model, line_width, show_coord):
         width = self._canvas.winfo_width()
         height = self._canvas.winfo_height()
 
+        facets = model.get_facets()
         edges = model.get_edges()
         vertices = model.get_vertices()
         vertices2d = []
@@ -186,7 +202,17 @@ class GraphicsEngine3dBase(object):
                             vertices2d[edge.vid_to].point.x + width / 2,
                             vertices2d[edge.vid_to].point.y + height / 2,
                             line_width,
-                            color)
+                            vertices2d[edge.vid_from].color,
+                            vertices2d[edge.vid_to].color)
+
+        for facet in facets:
+            self._fill_facet(vertices2d[edge.vid_1].point.x + width / 2,
+                             vertices2d[edge.vid_1].point.y + height / 2,
+                             vertices2d[edge.vid_2].point.x + width / 2,
+                             vertices2d[edge.vid_2].point.y + height / 2,
+                             vertices2d[edge.vid_3].point.x + width / 2,
+                             vertices2d[edge.vid_3].point.y + height / 2,
+                             facet.color)
 
         if show_coord:
             for i in range(0, len(vertices)):
@@ -195,7 +221,10 @@ class GraphicsEngine3dBase(object):
                                 "{:.2f}".format(vertices[i].point.y) + ". " +
                                 "{:.2f}".format(vertices[i].point.z))
 
-    def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color):
+    def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color_from, color_to):
+        pass
+
+    def _fill_facet(self, x_1, y_1, x_2, y_2, x_3, y_3, color):
         pass
 
     def _draw_text(self, x, y, text):

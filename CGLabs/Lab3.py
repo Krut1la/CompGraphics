@@ -7,7 +7,7 @@ Desc:   Computer graphics Lab 3. 2020
 
 """
 
-from GraphicsEngine3dBase import GraphicsEngine3dBase
+from GraphicsEngine3dBase import GraphicsEngine3dBase, color_rgb
 from ScreenSaver import ScreenSaver, build_animation
 from graphics3d import Vector3, BoundingBox
 
@@ -23,13 +23,16 @@ class GraphicsEngine3dCanvas(GraphicsEngine3dBase):
     def _init_ui(self):
         super(GraphicsEngine3dCanvas, self)._init_ui()
 
-    def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color):
+    def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color_from, color_to):
+        # this engine does not support color gradients, so we pick color from
+        color_str = color_rgb(color_from[0], color_from[1], color_from[2])
+
         self._canvas.create_line(x_from,
                                  y_from,
                                  x_to,
                                  y_to,
                                  width=line_width,
-                                 fill=color)
+                                 fill=color_str)
 
     def _draw_text(self, x, y, text):
         self._canvas.create_text(x, y,

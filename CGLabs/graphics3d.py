@@ -1,3 +1,14 @@
+"""
+Prog:   graphics3d.py
+
+Auth:   Oleksii Krutko, IO-z91
+
+Desc:   Computer graphics Labs. 2020
+
+Linear algebra and basic 3d objects
+
+"""
+
 from math import sqrt, cos, sin
 
 import numpy as np
@@ -29,6 +40,7 @@ class Vector3(Transformable):
     """
     Represents 3-vector with standard operations on it.
     """
+
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
@@ -60,7 +72,7 @@ class Vector3(Transformable):
         length = self.length()
         if length == 0.0:
             raise
-        return self*(1/length)
+        return self * (1 / length)
 
     def cross(self, vector):
         return Vector3(self.y * vector.z - self.z * vector.y,
@@ -97,6 +109,7 @@ class MatrixAffine4x4(object):
     """
     Represents affine matrix with standard operations.
     """
+
     def __init__(self):
         self.data = np.array([[1.0, 0.0, 0.0, 0.0],
                               [0.0, 1.0, 0.0, 0.0],
@@ -222,6 +235,7 @@ class BoundingBox(Transformable):
     """
     Represents bounding box.
     """
+
     def __init__(self, point_min, point_max):
         self.point_min = point_min
         self.point_max = point_max
@@ -275,15 +289,16 @@ class Vertex3d(Transformable):
     Represents a single 3d vertex.
     """
 
-    def __init__(self, point):
+    def __init__(self, point, color=(0, 0, 0)):
         self.point = point
+        self.color = color
 
     def transform(self, matrix):
         self.point.transform(matrix)
 
     def get_transformed(self, matrix):
         point = self.point.get_transformed(matrix)
-        return Vertex3d(point)
+        return Vertex3d(point, self.color)
 
 
 class Edge(object):
@@ -296,6 +311,18 @@ class Edge(object):
         self.vid_to = vid_to
 
 
+class Facet(object):
+    """
+    Represents a facet based on three vertices.
+    """
+
+    def __init__(self, vid_1, vid_2, vid_3, color=(0, 0, 0)):
+        self.vid_1 = vid_1
+        self.vid_2 = vid_2
+        self.vid_3 = vid_3
+        self.color = color
+
+
 class Model(Transformable):
     """
     Represents 3d geometry objects.
@@ -304,6 +331,7 @@ class Model(Transformable):
     def __init__(self):
         self._vertices = []
         self._edges = []
+        self._facets = []
 
     def transform(self, matrix):
         for vertex in self._vertices:
@@ -317,12 +345,20 @@ class Model(Transformable):
         self._edges.append(edge)
         return len(self._edges) - 1
 
+    def add_facet(self, facet):
+        self._facets.append(facet)
+        return len(self._facets) - 1
+
     def get_vertices(self):
         return self._vertices
 
     def get_edges(self):
         return self._edges
 
+    def get_facets(self):
+        return self._facets
+
     def clear(self):
         self._vertices.clear()
         self._edges.clear()
+        self._facets.clear()

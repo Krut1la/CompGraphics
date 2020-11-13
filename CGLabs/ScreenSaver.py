@@ -1,8 +1,18 @@
+"""
+Prog:   ScreenSaver.py
+
+Auth:   Oleksii Krutko, IO-z91
+
+Desc:   Computer graphics Labs. 2020
+
+Screen saver for labs 3, 4, 5
+
+"""
+
 import copy
 import random
 from math import pi, sin
 
-from GraphicsEngine3dBase import color_rgb
 from graphics3d import Model, Vector3, Vertex3d, Edge, MatrixAffine4x4
 
 
@@ -69,7 +79,17 @@ class ScreenSaver(object):
         self._engine = engine
         self._model = copy.deepcopy(model)
         self._boundary_box_model = boundary_box.get_model()
+
+        vertices = self._boundary_box_model.get_vertices()
+        for vertex in vertices:
+            vertex.color = (127, 127, 127)
+
         self._trajectory_model = animation.get_model()
+
+        vertices = self._trajectory_model.get_vertices()
+        for vertex in vertices:
+            vertex.color = (255, 0, 0)
+
         self._animation = animation
 
         self._engine.update()
@@ -79,7 +99,7 @@ class ScreenSaver(object):
         if self._engine.is_animating.get():
             self._draw_frame(self._animation.get_frame())
 
-        self._engine.after(20, self._animate)
+        self._engine.after(5, self._animate)
 
     def _draw_frame(self, frame):
         if self._model is not None:
@@ -89,13 +109,17 @@ class ScreenSaver(object):
                 self._engine.draw_axes()
 
             if self._engine.show_debug.get():
-                self._engine.draw_model(self._boundary_box_model, 1, "gray", True)
-                self._engine.draw_model(self._trajectory_model, 5, "red", True)
+                self._engine.draw_model(self._boundary_box_model, 1, True)
+                self._engine.draw_model(self._trajectory_model, 5, True)
 
             model = copy.deepcopy(self._model)
             model.transform(frame.transformation)
 
-            self._engine.draw_model(model, 3, frame.color,  self._engine.show_debug.get())
+            vertices = model.get_vertices()
+            for vertex in vertices:
+                vertex.color = frame.color
+
+            self._engine.draw_model(model, 3, self._engine.show_debug.get())
             self._engine.update()
 
     def start(self):
@@ -134,7 +158,7 @@ def build_animation(boundary_box):
 
         trans = MatrixAffine4x4.build_translation(current_position)
         rot = MatrixAffine4x4.build_rotation(2 * i * pi / 300, Vector3.unit_z())
-        color = color_rgb(round(abs(sin(i / 100)) * 255), round(abs(sin(i / 100)) * 255), 255)
+        color = (round(abs(sin(i / 100)) * 255), round(abs(sin(i / 100)) * 255), 255)
         time_delay = 100
         frame = AnimationFrame(time_delay, color, rot * trans)
         frames.append(frame)
