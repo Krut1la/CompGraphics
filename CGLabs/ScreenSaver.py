@@ -20,9 +20,9 @@ class AnimationFrame(object):
     """
     Represents a single frame in an animation sequence.
     """
-    def __init__(self, time_delay, color, transformation):
+    def __init__(self, time_delay, transparency, transformation):
         self.time_delay = time_delay
-        self.color = color
+        self.transparency = transparency
         self.transformation = transformation
 
 
@@ -78,7 +78,14 @@ class ScreenSaver(object):
     def __init__(self, engine, model, animation, boundary_box):
         self._engine = engine
         self._model = copy.deepcopy(model)
+
+        vertices = self._model.get_vertices()
+        for vertex in vertices:
+            vertex.color = (round(random.random() * 255), round(random.random() * 255), round(random.random() * 255))
+
         self._boundary_box_model = boundary_box.get_model()
+
+        self._boundary_box_model.get_facets().clear()
 
         vertices = self._boundary_box_model.get_vertices()
         for vertex in vertices:
@@ -99,7 +106,7 @@ class ScreenSaver(object):
         if self._engine.is_animating.get():
             self._draw_frame(self._animation.get_frame())
 
-        self._engine.after(5, self._animate)
+        self._engine.after(20, self._animate)
 
     def _draw_frame(self, frame):
         if self._model is not None:
@@ -109,17 +116,19 @@ class ScreenSaver(object):
                 self._engine.draw_axes()
 
             if self._engine.show_debug.get():
-                self._engine.draw_model(self._boundary_box_model, 1, True)
-                self._engine.draw_model(self._trajectory_model, 5, True)
+                self._engine.draw_model(self._boundary_box_model, 1, True, 0.0)
+                self._engine.draw_model(self._trajectory_model, 5, True, 0.0)
 
             model = copy.deepcopy(self._model)
             model.transform(frame.transformation)
 
-            vertices = model.get_vertices()
-            for vertex in vertices:
-                vertex.color = frame.color
+            # vertices = model.get_vertices()
+            # for vertex in vertices:
+            #    vertex.color = (round(vertex.color[0] + 255 * frame.transparency),
+            #                    round(vertex.color[1] + 255 * frame.transparency),
+            #                    round(vertex.color[2] + 255 * frame.transparency))
 
-            self._engine.draw_model(model, 3, self._engine.show_debug.get())
+            self._engine.draw_model(model, 3, self._engine.show_debug.get(), frame.transparency)
             self._engine.update()
 
     def start(self):
@@ -158,9 +167,9 @@ def build_animation(boundary_box):
 
         trans = MatrixAffine4x4.build_translation(current_position)
         rot = MatrixAffine4x4.build_rotation(2 * i * pi / 300, Vector3.unit_z())
-        color = (round(abs(sin(i / 100)) * 255), round(abs(sin(i / 100)) * 255), 255)
+        # color = (round(abs(sin(i / 100)) * 255), round(abs(sin(i / 100)) * 255), 255)
         time_delay = 100
-        frame = AnimationFrame(time_delay, color, rot * trans)
+        frame = AnimationFrame(time_delay, abs(sin(i / 100)), rot * trans)
         frames.append(frame)
 
     return Animation(True, frames)

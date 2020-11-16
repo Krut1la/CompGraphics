@@ -272,6 +272,12 @@ class BoundingBox(Transformable):
         model.add_edge(Edge(vid_3, vid_7))
         model.add_edge(Edge(vid_4, vid_8))
 
+        model.add_facet(Facet(vid_1, vid_2, vid_3))
+        model.add_facet(Facet(vid_2, vid_3, vid_4))
+
+        model.add_facet(Facet(vid_5, vid_6, vid_7))
+        model.add_facet(Facet(vid_6, vid_7, vid_8))
+
         return model
 
     def transform(self, matrix):
@@ -316,11 +322,10 @@ class Facet(object):
     Represents a facet based on three vertices.
     """
 
-    def __init__(self, vid_1, vid_2, vid_3, color=(0, 0, 0)):
+    def __init__(self, vid_1, vid_2, vid_3):
         self.vid_1 = vid_1
         self.vid_2 = vid_2
         self.vid_3 = vid_3
-        self.color = color
 
 
 class Model(Transformable):

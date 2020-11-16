@@ -179,9 +179,9 @@ class GraphicsEngine3dBase(object):
         for vertex in vertices:
             vertex.color = (127, 127, 127)
 
-        self.draw_model(model, 1, True)
+        self.draw_model(model, 1, True, 0.0)
 
-    def draw_model(self, model, line_width, show_coord):
+    def draw_model(self, model, line_width, show_coord, transparency):
         width = self._canvas.winfo_width()
         height = self._canvas.winfo_height()
 
@@ -203,16 +203,20 @@ class GraphicsEngine3dBase(object):
                             vertices2d[edge.vid_to].point.y + height / 2,
                             line_width,
                             vertices2d[edge.vid_from].color,
-                            vertices2d[edge.vid_to].color)
+                            vertices2d[edge.vid_to].color,
+                            transparency)
 
         for facet in facets:
-            self._fill_facet(vertices2d[edge.vid_1].point.x + width / 2,
-                             vertices2d[edge.vid_1].point.y + height / 2,
-                             vertices2d[edge.vid_2].point.x + width / 2,
-                             vertices2d[edge.vid_2].point.y + height / 2,
-                             vertices2d[edge.vid_3].point.x + width / 2,
-                             vertices2d[edge.vid_3].point.y + height / 2,
-                             facet.color)
+            self._fill_facet(vertices2d[facet.vid_1].point.x + width / 2,
+                             vertices2d[facet.vid_1].point.y + height / 2,
+                             vertices2d[facet.vid_2].point.x + width / 2,
+                             vertices2d[facet.vid_2].point.y + height / 2,
+                             vertices2d[facet.vid_3].point.x + width / 2,
+                             vertices2d[facet.vid_3].point.y + height / 2,
+                             vertices2d[facet.vid_1].color,
+                             vertices2d[facet.vid_2].color,
+                             vertices2d[facet.vid_3].color,
+                             transparency)
 
         if show_coord:
             for i in range(0, len(vertices)):
@@ -221,10 +225,10 @@ class GraphicsEngine3dBase(object):
                                 "{:.2f}".format(vertices[i].point.y) + ". " +
                                 "{:.2f}".format(vertices[i].point.z))
 
-    def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color_from, color_to):
+    def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color_from, color_to, transparency):
         pass
 
-    def _fill_facet(self, x_1, y_1, x_2, y_2, x_3, y_3, color):
+    def _fill_facet(self, x_1, y_1, x_2, y_2, x_3, y_3, color_1, color_2, color_3, transparency):
         pass
 
     def _draw_text(self, x, y, text):

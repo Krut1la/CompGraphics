@@ -23,9 +23,11 @@ class GraphicsEngine3dCanvas(GraphicsEngine3dBase):
     def _init_ui(self):
         super(GraphicsEngine3dCanvas, self)._init_ui()
 
-    def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color_from, color_to):
+    def _draw_line(self, x_from, y_from, x_to, y_to, line_width, color_from, color_to, transparency):
         # this engine does not support color gradients, so we pick color from
-        color_str = color_rgb(color_from[0], color_from[1], color_from[2])
+        color_str = color_rgb(min(round(color_from[0] + 255 * transparency), 255),
+                              min(round(color_from[1] + 255 * transparency), 255),
+                              min(round(color_from[2] + 255 * transparency), 255))
 
         self._canvas.create_line(x_from,
                                  y_from,
