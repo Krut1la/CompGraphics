@@ -107,21 +107,20 @@ class GraphicsEngine3dImage(GraphicsEngine3dBase):
                 sqr_dist = (x_to - x) ** 2 - (y_to - y) ** 2
                 sqr_full_dist = (x_to - x_from) ** 2 - (y_to - y_from) ** 2
                 if sqr_full_dist == 0.0:
-                    fraction = 1.0
-                else:
-                    fraction = sqr_dist/sqr_full_dist
+                    self._pixels[y, x] = color_from
+                    continue
+
+                fraction = sqr_dist/sqr_full_dist
 
                 r_n = (color_from[0] - color_to[0]) * fraction + color_to[0]
                 g_n = (color_from[1] - color_to[1]) * fraction + color_to[1]
                 b_n = (color_from[2] - color_to[2]) * fraction + color_to[2]
 
-                r = self._pixels[y, x][0]
-                g = self._pixels[y, x][1]
-                b = self._pixels[y, x][2]
+                pixel = self._pixels[y, x]
 
-                blend_r = r * transparency + r_n * (1 - transparency)
-                blend_g = g * transparency + g_n * (1 - transparency)
-                blend_b = b * transparency + b_n * (1 - transparency)
+                blend_r = pixel[0] * transparency + r_n * (1 - transparency)
+                blend_g = pixel[1] * transparency + g_n * (1 - transparency)
+                blend_b = pixel[0] * transparency + b_n * (1 - transparency)
 
                 self._pixels[y, x] = (blend_r, blend_g, blend_b)
 
@@ -167,13 +166,11 @@ class GraphicsEngine3dImage(GraphicsEngine3dBase):
                     g_n = (color_1[1] * fraction_1 + color_2[1] * fraction_2 + color_3[1] * fraction_3)
                     b_n = (color_1[2] * fraction_1 + color_2[2] * fraction_2 + color_3[2] * fraction_3)
 
-                    r = self._pixels[y, x][0]
-                    g = self._pixels[y, x][1]
-                    b = self._pixels[y, x][2]
+                    pixel = self._pixels[y, x]
 
-                    blend_r = r * transparency + r_n * (1 - transparency)
-                    blend_g = g * transparency + g_n * (1 - transparency)
-                    blend_b = b * transparency + b_n * (1 - transparency)
+                    blend_r = pixel[0] * transparency + r_n * (1 - transparency)
+                    blend_g = pixel[1] * transparency + g_n * (1 - transparency)
+                    blend_b = pixel[2] * transparency + b_n * (1 - transparency)
 
                     self._pixels[y, x] = (blend_r, blend_g, blend_b)
 
