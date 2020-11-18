@@ -147,9 +147,16 @@ class GraphicsEngine3dImage(GraphicsEngine3dBase):
             :param y:
             :return:
             """
-            for x in range(round(x_from), round(x_to) + 1):
-                if 0 <= x < self._image.width() and 0 <= y < self._image.height():
 
+            c1 = color_1
+            c2 = color_2
+            c3 = color_3
+            w = self._image.width()
+            h = self._image.height()
+            x_r_from = round(x_from)
+            x_r_to = round(x_to) + 1
+            for x in range(x_r_from, x_r_to):
+                if 0 <= x < w and 0 <= y < h:
                     # Interpolate color between three vertices.
 
                     sqr_dist_1 = (x_1 - x) ** 2 + (y_1 - y) ** 2
@@ -162,9 +169,9 @@ class GraphicsEngine3dImage(GraphicsEngine3dBase):
                     fraction_2 = sqr_dist_2 / sqr_sum_dist
                     fraction_3 = sqr_dist_3 / sqr_sum_dist
 
-                    r_n = (color_1[0] * fraction_1 + color_2[0] * fraction_2 + color_3[0] * fraction_3)
-                    g_n = (color_1[1] * fraction_1 + color_2[1] * fraction_2 + color_3[1] * fraction_3)
-                    b_n = (color_1[2] * fraction_1 + color_2[2] * fraction_2 + color_3[2] * fraction_3)
+                    r_n = (c1[0] * fraction_1 + c2[0] * fraction_2 + c3[0] * fraction_3)
+                    g_n = (c1[1] * fraction_1 + c2[1] * fraction_2 + c3[1] * fraction_3)
+                    b_n = (c1[2] * fraction_1 + c2[2] * fraction_2 + c3[2] * fraction_3)
 
                     pixel = self._pixels[y, x]
 
