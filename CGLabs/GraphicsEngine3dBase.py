@@ -197,7 +197,12 @@ class GraphicsEngine3dBase(object):
 
             vertices2d.append(vertex.get_transformed(transform))
 
-        view_dir = Vector3.unit_z().get_transformed(self._view_types[self._view_type.get()])
+        transform_view = MatrixAffine4x4.build_xy_reflection() * \
+                    MatrixAffine4x4.build_xz_reflection() * \
+                    self._view_types[self._view_type.get()]
+
+        view_dir = Vector3.unit_z().neg()
+        view_dir = view_dir.get_transformed(transform_view)
 
         for edge in edges:
             self._draw_line(vertices2d[edge.vid_from].point.x + width / 2,
@@ -210,10 +215,12 @@ class GraphicsEngine3dBase(object):
                             transparency)
 
         for facet in facets:
+            normal = facet.normal.get_transformed(transform_view)
 
-            ve1 = vertices[facet.vid_2].point - vertices[facet.vid_1].point
-            ve2 = vertices[facet.vid_3].point - vertices[facet.vid_1].point
-            normal = ve1.cross(ve2).normalize()
+            dot = view_dir.dot(normal)
+
+            if dot < 0.0:
+                continue
 
             self._fill_facet(vertices2d[facet.vid_1].point.x + width / 2,
                              vertices2d[facet.vid_1].point.y + height / 2,

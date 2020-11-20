@@ -78,6 +78,7 @@ class ScreenSaver(object):
     def __init__(self, engine, model, animation, boundary_box):
         self._engine = engine
         self._model = copy.deepcopy(model)
+        self._model.calculate_facet_normals()
 
         vertices = self._model.get_vertices()
         for vertex in vertices:
@@ -153,7 +154,7 @@ def build_animation(boundary_box):
 
     current_position = copy.deepcopy(start_point)
 
-    for i in range(0, 2000):
+    for i in range(0, 1):
         while True:
             new_position = current_position + direction * direction_inc
 

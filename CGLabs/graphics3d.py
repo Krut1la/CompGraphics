@@ -74,6 +74,9 @@ class Vector3(Transformable):
             raise
         return self * (1 / length)
 
+    def dot(self, vector):
+        return self.x * vector.x + self.y * vector.y + self.z * vector.z
+
     def cross(self, vector):
         return Vector3(self.y * vector.z - self.z * vector.y,
                        self.z * vector.x - self.x * vector.z,
@@ -326,6 +329,7 @@ class Facet(object):
         self.vid_1 = vid_1
         self.vid_2 = vid_2
         self.vid_3 = vid_3
+        self.normal = Vector3.zero()
 
 
 class Model(Transformable):
@@ -341,6 +345,9 @@ class Model(Transformable):
     def transform(self, matrix):
         for vertex in self._vertices:
             vertex.transform(matrix)
+
+        for facet in self._facets:
+            facet.normal = facet.normal.get_transformed(matrix).normalize()
 
     def add_vertex(self, vertex):
         self._vertices.append(vertex)
@@ -362,6 +369,16 @@ class Model(Transformable):
 
     def get_facets(self):
         return self._facets
+
+    def calculate_facet_normals(self):
+        for facet in self._facets:
+            ve1 = self._vertices[facet.vid_2].point - self._vertices[facet.vid_1].point
+            ve2 = self._vertices[facet.vid_3].point - self._vertices[facet.vid_1].point
+
+            cross = ve1.cross(ve2)
+            crossnorm = cross.normalize()
+
+            facet.normal = crossnorm
 
     def clear(self):
         self._vertices.clear()
