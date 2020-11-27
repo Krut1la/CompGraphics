@@ -79,6 +79,7 @@ class ScreenSaver(object):
         self._engine = engine
         self._model = copy.deepcopy(model)
         self._model.calculate_facet_normals()
+        self._model.calculate_facet_mid_points()
 
         vertices = self._model.get_vertices()
         for vertex in vertices:
@@ -154,7 +155,7 @@ def build_animation(boundary_box):
 
     current_position = copy.deepcopy(start_point)
 
-    for i in range(0, 1):
+    for i in range(0, 2000):
         while True:
             new_position = current_position + direction * direction_inc
 
@@ -168,7 +169,6 @@ def build_animation(boundary_box):
 
         trans = MatrixAffine4x4.build_translation(current_position)
         rot = MatrixAffine4x4.build_rotation(2 * i * pi / 300, Vector3.unit_z())
-        # color = (round(abs(sin(i / 100)) * 255), round(abs(sin(i / 100)) * 255), 255)
         time_delay = 100
         frame = AnimationFrame(time_delay, abs(sin(i / 100)), rot * trans)
         frames.append(frame)

@@ -10,7 +10,7 @@ Linear algebra and basic 3d objects
 """
 
 from math import sqrt, cos, sin
-
+import copy
 import numpy as np
 
 
@@ -156,7 +156,7 @@ class MatrixAffine4x4(object):
         m = MatrixAffine4x4()
         m.data = np.array([[1.0, 0.0, 0.0, p],
                            [0.0, 1.0, 0.0, q],
-                           [0.0, 0.0, 0.0, r],
+                           [0.0, 0.0, 1.0, r],
                            [0.0, 0.0, 0.0, 1.0]])
         return m
 
@@ -182,7 +182,8 @@ class MatrixAffine4x4(object):
                        [0.0, -sin(eta), cos(eta), 0.0],
                        [0.0, 0.0, 0.0, 1.0]])
 
-        m.data = m1.dot(m2).dot(MatrixAffine4x4.build_orthogonal_proj().data)
+        # m.data = m1.dot(m2).dot(MatrixAffine4x4.build_orthogonal_proj().data)
+        m.data = m1.dot(m2).data
 
         return m
 
@@ -233,6 +234,31 @@ class MatrixAffine4x4(object):
                            [point.x, point.y, point.z, 1.0]])
         return m
 
+    def extract_rotation(self):
+        # decompose matrix to find rotation
+
+        sx = self.data[0, 0] ** 2 + self.data[0, 1] ** 2 + self.data[0, 2] ** 2
+        sy = self.data[1, 0] ** 2 + self.data[1, 1] ** 2 + self.data[1, 2] ** 2
+        sz = self.data[2, 0] ** 2 + self.data[2, 1] ** 2 + self.data[2, 2] ** 2
+
+        a = self.data[0, 0]
+        b = self.data[0, 1]
+        c = self.data[0, 2]
+        e = self.data[1, 0]
+        f = self.data[1, 1]
+        g = self.data[1, 2]
+        i = self.data[2, 0]
+        j = self.data[2, 1]
+        k = self.data[2, 2]
+
+        rot = MatrixAffine4x4()
+        rot.data = np.array([[a / sx, b / sy, c / sz, 0.0],
+                             [e / sx, f / sy, g / sz, 0.0],
+                             [i / sx, j / sy, k / sz, 0.0],
+                             [0.0, 0.0, 0.0, 1.0]])
+
+        return rot
+
 
 class BoundingBox(Transformable):
     """
@@ -276,9 +302,9 @@ class BoundingBox(Transformable):
         model.add_edge(Edge(vid_4, vid_8))
 
         model.add_facet(Facet(vid_1, vid_2, vid_3))
-        model.add_facet(Facet(vid_2, vid_3, vid_4))
+        model.add_facet(Facet(vid_2, vid_4, vid_3))
 
-        model.add_facet(Facet(vid_5, vid_6, vid_7))
+        model.add_facet(Facet(vid_5, vid_7, vid_6))
         model.add_facet(Facet(vid_6, vid_7, vid_8))
 
         return model
@@ -330,6 +356,7 @@ class Facet(object):
         self.vid_2 = vid_2
         self.vid_3 = vid_3
         self.normal = Vector3.zero()
+        self.mid_point = Vector3.zero()
 
 
 class Model(Transformable):
@@ -346,8 +373,11 @@ class Model(Transformable):
         for vertex in self._vertices:
             vertex.transform(matrix)
 
+        rot = matrix.extract_rotation()
+
         for facet in self._facets:
-            facet.normal = facet.normal.get_transformed(matrix).normalize()
+            facet.normal = facet.normal.get_transformed(rot)
+            facet.mid_point = facet.mid_point.get_transformed(matrix)
 
     def add_vertex(self, vertex):
         self._vertices.append(vertex)
@@ -375,10 +405,35 @@ class Model(Transformable):
             ve1 = self._vertices[facet.vid_2].point - self._vertices[facet.vid_1].point
             ve2 = self._vertices[facet.vid_3].point - self._vertices[facet.vid_1].point
 
-            cross = ve1.cross(ve2)
-            crossnorm = cross.normalize()
+            facet.normal = ve1.cross(ve2).normalize()
 
-            facet.normal = crossnorm
+    def calculate_facet_mid_points(self):
+        for facet in self._facets:
+            ve1 = self._vertices[facet.vid_1].point
+            ve2 = self._vertices[facet.vid_2].point
+            ve3 = self._vertices[facet.vid_3].point
+
+            facet.mid_point = Vector3((ve1.x + ve2.x + ve3.x)*(1.0 / 3.0),
+                                      (ve1.y + ve2.y + ve3.y)*(1.0 / 3.0),
+                                      (ve1.z + ve2.z + ve3.z)*(1.0 / 3.0))
+
+    def append(self, model_t):
+        vertices_count = len(self._vertices)
+        for ve in model_t.get_vertices():
+            self._vertices.append(copy.deepcopy(ve))
+
+        for edge in model_t.get_edges():
+            new_edge = copy.deepcopy(edge)
+            new_edge.vid_from = new_edge.vid_from + vertices_count
+            new_edge.vid_to = new_edge.vid_to + vertices_count
+            self._edges.append(new_edge)
+
+        for fa in model_t.get_facets():
+            new_fa = copy.deepcopy(fa)
+            new_fa.vid_1 = new_fa.vid_1 + vertices_count
+            new_fa.vid_2 = new_fa.vid_2 + vertices_count
+            new_fa.vid_3 = new_fa.vid_3 + vertices_count
+            self._facets.append(new_fa)
 
     def clear(self):
         self._vertices.clear()
