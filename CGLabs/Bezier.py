@@ -1,10 +1,12 @@
 import numpy as np
 
 
-# find the a & b points
-def get_bezier_coef(points):
-    # since the formulas work given that we have n+1 points
-    # then n must be this:
+def get_bezier_coefficients(points):
+    """
+    Find the a & b points
+    :param points:
+    :return:
+    """
     n = len(points) - 1
 
     # build coefficients matrix
@@ -30,23 +32,35 @@ def get_bezier_coef(points):
     return A, B
 
 
-# returns the general Bezier cubic formula given 4 control points
 def get_cubic(a, b, c, d):
-    return lambda t: np.power(1 - t, 3) * a + 3 * np.power(1 - t, 2) * t * b + 3 * (1 - t) * np.power(t,
-                                                                                                      2) * c + np.power(
-        t, 3) * d
+    """
+    Gets the general Bezier cubic formula given 4 control points
+    :param a:
+    :param b:
+    :param c:
+    :param d:
+    :return:
+    """
+    return lambda t: np.power(1 - t, 3) * a + 3 * np.power(1 - t, 2) \
+                     * t * b + 3 * (1 - t) * np.power(t, 2) * c + np.power(t, 3) * d
 
 
-# return one cubic curve for each consecutive points
 def get_bezier_cubic(points):
-    A, B = get_bezier_coef(points)
-    return [
-        get_cubic(points[i], A[i], B[i], points[i + 1])
-        for i in range(len(points) - 1)
-    ]
+    """
+    Gets one cubic curve for each consecutive points
+    :param points:
+    :return:
+    """
+    A, B = get_bezier_coefficients(points)
+    return [get_cubic(points[i], A[i], B[i], points[i + 1]) for i in range(len(points) - 1)]
 
 
-# evaluate each cubic curve on the range [0, 1] sliced in n points
 def evaluate_bezier(points, n):
+    """
+    Evaluates each cubic curve on the range [0, 1] sliced in n points
+    :param points:
+    :param n:
+    :return:
+    """
     curves = get_bezier_cubic(points)
-    return np.array([fun(t) for fun in curves for t in np.linspace(0, 1, n)])
+    return np.array([func(t) for func in curves for t in np.linspace(0, 1, n)])
