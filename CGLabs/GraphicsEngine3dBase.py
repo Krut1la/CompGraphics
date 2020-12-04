@@ -10,6 +10,7 @@ Simple 3d graphics based on Tk.
 """
 
 import math
+import random
 import numpy as np
 import tkinter as tk
 from math import pi
@@ -550,6 +551,77 @@ class GraphicsEngine3dImageVector(GraphicsEngine3dImage):
             y = round(point[1])
             if 0 <= x < self._image.width() and 0 <= y < self._image.height():
                 self._pixels[y, x] = color_from
+
+
+class GraphicsEngine3dImageVectorFractal(GraphicsEngine3dImageVector):
+    """
+    Simple 3d graphics based on Tk.
+    """
+
+    def __init__(self, width, height, title):
+        super(GraphicsEngine3dImageVectorFractal, self).__init__(width, height, title)
+
+        self._fractal_pixels = np.array(self._background)
+        self._build_barnsley_fractal()
+
+    def _build_barnsley_fractal(self):
+
+        coeffs = np.array([[[0.0, 0.0, 0.0, 0.16, 0.0, 0.0, 1.0],
+                            [0.85, 0.04, -0.04, 0.85, 0.0, 1.6, 85.0],
+                            [0.2, -0.26, 0.23, 0.22, 0.0, 1.6, 7.0],
+                            [-0.15, 0.28, 0.26, 0.24, 0.0, 0.44, 7.0]
+                           ],
+                           [[0.0, 0.0, 0.0, 0.2, 0.0, -0.12, 1.0],
+                            [0.845, 0.035, -0.035, 0.82, 0.0, 1.6, 85.0],
+                            [0.2, -0.31, 0.255, 0.245, 0.0, 0.29, 7.0],
+                            [-0.15, 0.24, 0.25, 0.20, 0.0, 0.68, 7.0]
+                            ]
+                          ])
+
+        for n in range(0, 2):
+            x = []
+            y = []
+
+            x.append(coeffs[n, 0, 0])
+            y.append(coeffs[n, 0, 1])
+
+            current = 0
+
+            for i in range(1, 50000):
+                z = random.randint(1, 100)
+
+                if z == int(coeffs[n, 0, 6]):
+                    x.append(coeffs[n, 0, 2])
+                    y.append(coeffs[n, 0, 3] * (y[current]))
+
+                if int(coeffs[n, 0, 6]) < z <= int(coeffs[n, 1, 6]) + int(coeffs[n, 0, 6]):
+                    x.append(coeffs[n, 1, 0] * x[current] + coeffs[n, 1, 1] * y[current] + coeffs[n, 1, 4])
+                    y.append(coeffs[n, 1, 2] * x[current] + coeffs[n, 1, 3] * y[current] + coeffs[n, 1, 5])
+
+                if int(coeffs[n, 1, 6]) + int(coeffs[n, 0, 6]) < z <= int(coeffs[n, 2, 6]) + int(coeffs[n, 1, 6]) + int(coeffs[n, 0, 6]):
+                    x.append(coeffs[n, 2, 0] * x[current] + coeffs[n, 2, 1] * y[current] + coeffs[n, 2, 4])
+                    y.append(coeffs[n, 2, 2] * x[current] + coeffs[n, 2, 3] * y[current] + coeffs[n, 2, 5])
+
+                if int(coeffs[n, 2, 6]) + int(coeffs[n, 1, 6]) + int(coeffs[n, 0, 6]) < z <= 100:
+                    x.append(coeffs[n, 3, 0] * x[current] + coeffs[n, 3, 1] * y[current] + coeffs[n, 3, 4])
+                    y.append(coeffs[n, 3, 2] * x[current] + coeffs[n, 3, 3] * y[current] + coeffs[n, 3, 5])
+
+                current = current + 1
+
+                p_x = int(x[i - 1] * 50 + (n + 1)*210)
+                p_y = int(y[i - 1] * 20)
+
+                if 0 <= p_x < self._image.width() and 0 <= p_y < self._image.height():
+                    self._fractal_pixels[p_y, p_x] = (0, z*2.55, 0)
+
+    def _build_sierpinsky_fractal(self):
+        self._fractal_pixels.fill(133)
+
+    def clear(self):
+        self._canvas.delete("labels")
+
+        self._pixels = self._fractal_pixels.copy()
+        self._z_buffer.fill(-float("inf"))
 
 
 def color_rgb(r, g, b):
