@@ -563,14 +563,29 @@ class GraphicsEngine3dImageVectorFractal(GraphicsEngine3dImageVector):
 
         self._fractal_pixels = np.array(self._background)
         self._build_barnsley_fractal()
+        self._build_sierpinsky_fractal()
 
     def _build_barnsley_fractal(self):
+        """
+        Draws several Barnsley ferns into _fractal_pixels.
+        :return:
+        """
 
         coeffs = np.array([[[0.0, 0.0, 0.0, 0.16, 0.0, 0.0, 1.0],
                             [0.85, 0.04, -0.04, 0.85, 0.0, 1.6, 85.0],
                             [0.2, -0.26, 0.23, 0.22, 0.0, 1.6, 7.0],
                             [-0.15, 0.28, 0.26, 0.24, 0.0, 0.44, 7.0]
                            ],
+                           [[0.0, 0.0, 0.0, 0.25, 0.0, -0.14, 2.0],
+                            [0.85, 0.02, -0.02, 0.83, 0.0, 1.0, 84.0],
+                            [0.09, -0.28, 0.3, 0.11, 0.0, 0.6, 7.0],
+                            [-0.09, 0.28, 0.3, 0.09, 0.0, 0.7, 7.0]
+                            ],
+                           [[0.0, 0.0, 0.0, 0.25, 0.0, -0.4, 2.0],
+                            [0.95, 0.002, -0.002, 0.93, -0.002, 0.5, 84.0],
+                            [0.035, -0.1, 0.27, 0.01, -0.05, 0.005, 7.0],
+                            [-0.04, 0.11, 0.27, 0.01, 0.047, 0.06, 7.0]
+                            ],
                            [[0.0, 0.0, 0.0, 0.2, 0.0, -0.12, 1.0],
                             [0.845, 0.035, -0.035, 0.82, 0.0, 1.6, 85.0],
                             [0.2, -0.31, 0.255, 0.245, 0.0, 0.29, 7.0],
@@ -578,7 +593,7 @@ class GraphicsEngine3dImageVectorFractal(GraphicsEngine3dImageVector):
                             ]
                           ])
 
-        for n in range(0, 2):
+        for n in range(0, 4):
             x = []
             y = []
 
@@ -590,7 +605,7 @@ class GraphicsEngine3dImageVectorFractal(GraphicsEngine3dImageVector):
             for i in range(1, 50000):
                 z = random.randint(1, 100)
 
-                if z == int(coeffs[n, 0, 6]):
+                if 0 < z <= int(coeffs[n, 0, 6]):
                     x.append(coeffs[n, 0, 2])
                     y.append(coeffs[n, 0, 3] * (y[current]))
 
@@ -608,14 +623,75 @@ class GraphicsEngine3dImageVectorFractal(GraphicsEngine3dImageVector):
 
                 current = current + 1
 
-                p_x = int(x[i - 1] * 50 + (n + 1)*210)
-                p_y = int(y[i - 1] * 20)
+                p_x = int(x[i - 1] * 50 + (n + 1)*130)
+                p_y = int(y[i - 1] * 40)
 
                 if 0 <= p_x < self._image.width() and 0 <= p_y < self._image.height():
-                    self._fractal_pixels[p_y, p_x] = (0, z*2.55, 0)
+                    self._fractal_pixels[p_y, p_x] = (0, int(255 / (n + 1)), 0)
+
+    def __draw_background_line(self, x_from, y_from, x_to, y_to, z_from, z_to, line_width, color_from,
+                               color_to, transparency):
+        m = np.array([[x_from, y_from],
+                       [(x_from + x_to)/2, (y_from + y_to)/2],
+                         [x_to, y_to]])
+
+        points = evaluate_bezier(m, 50)
+
+        for point in points:
+            x = round(point[0])
+            y = round(point[1])
+            if 0 <= x < self._image.width() and 0 <= y < self._image.height():
+                self._fractal_pixels[y, x] = color_from
 
     def _build_sierpinsky_fractal(self):
-        self._fractal_pixels.fill(133)
+        """
+        Draws several Sierpinsky's triangles into _fractal_pixels.
+        :return:
+        """
+
+        def draw_sub_triangle(pt1_x, pt1_y, pt2_x, pt2_y, pt3_x, pt3_y, depth):
+            if depth > 6:
+                return
+
+            self.__draw_background_line(pt1_x, pt1_y, pt2_x, pt2_y, 0.0, 0.0, 1.0,
+                                        (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 0.0)
+            self.__draw_background_line(pt2_x, pt2_y, pt3_x, pt3_y, 0.0, 0.0, 1.0,
+                                        (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 0.0)
+            self.__draw_background_line(pt3_x, pt3_y, pt1_x, pt1_y, 0.0, 0.0, 1.0,
+                                        (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 0.0)
+
+            pt_sub_1_x = (pt1_x + pt2_x) / 2
+            pt_sub_1_y = (pt1_y + pt2_y) / 2
+            pt_sub_2_x = pt2_x
+            pt_sub_2_y = pt2_y
+            pt_sub_3_x = (pt2_x + pt3_x) / 2
+            pt_sub_3_y = (pt2_y + pt3_y) / 2
+
+            draw_sub_triangle(pt_sub_1_x, pt_sub_1_y, pt_sub_2_x, pt_sub_2_y, pt_sub_3_x, pt_sub_3_y, depth + 1)
+
+            pt_sub_1_x = (pt1_x + pt3_x) / 2
+            pt_sub_1_y = (pt1_y + pt3_y) / 2
+            pt_sub_2_x = pt3_x
+            pt_sub_2_y = pt3_y
+            pt_sub_3_x = (pt2_x + pt3_x) / 2
+            pt_sub_3_y = (pt2_y + pt3_y) / 2
+
+            draw_sub_triangle(pt_sub_1_x, pt_sub_1_y, pt_sub_2_x, pt_sub_2_y, pt_sub_3_x, pt_sub_3_y, depth + 1)
+
+            pt_sub_1_x = (pt1_x + pt2_x) / 2
+            pt_sub_1_y = (pt1_y + pt2_y) / 2
+            pt_sub_2_x = pt1_x
+            pt_sub_2_y = pt1_y
+            pt_sub_3_x = (pt1_x + pt3_x) / 2
+            pt_sub_3_y = (pt1_y + pt3_y) / 2
+
+            draw_sub_triangle(pt_sub_1_x, pt_sub_1_y, pt_sub_2_x, pt_sub_2_y, pt_sub_3_x, pt_sub_3_y, depth + 1)
+
+        w = self._image_width
+        h = self._image_height
+
+        draw_sub_triangle(0, h / 2, w / 4, h, w / 2, h / 2, 1)
+        draw_sub_triangle(3 * w / 4, h / 2, w / 2, h, w, h, 1)
 
     def clear(self):
         self._canvas.delete("labels")
