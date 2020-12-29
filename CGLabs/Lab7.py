@@ -10,181 +10,214 @@ Desc:   Computer graphics Lab 7. 2020
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-# import Image  # PIL
 import sys
 import math
 
-
-angle = 0.0
-angle2 = 0.0
-texture = 0
-object = 0
-d = 3.0 / math.sqrt(3)
+rot_angle = 0.0
 
 
 def drawBox(x1, x2, y1, y2, z1, z2):
-    glBindTexture(GL_TEXTURE_2D, texture)
-    glBegin(GL_POLYGON)  # front face
+    """
+    Draws a box with diagonal  (x1, y1, z1) - (x2, y2, z2)
+    :param x1:
+    :param x2:
+    :param y1:
+    :param y2:
+    :param z1:
+    :param z2:
+    :return:
+    """
+    glBegin(GL_POLYGON)
     glNormal3f(0.0, 0.0, 1.0)
-    glTexCoord2f(0, 0)
     glVertex3f(x1, y1, z2)
-    glTexCoord2f(1, 0)
     glVertex3f(x2, y1, z2)
-    glTexCoord2f(1, 1)
     glVertex3f(x2, y2, z2)
-    glTexCoord2f(0, 1)
     glVertex3f(x1, y2, z2)
     glEnd()
 
-    glBegin(GL_POLYGON)  # back face
+    glBegin(GL_POLYGON)
     glNormal3f(0.0, 0.0, -1.0)
-    glTexCoord2f(1, 0)
     glVertex3f(x2, y1, z1)
-    glTexCoord2f(0, 0)
     glVertex3f(x1, y1, z1)
-    glTexCoord2f(0, 1)
     glVertex3f(x1, y2, z1)
-    glTexCoord2f(1, 1)
     glVertex3f(x2, y2, z1)
     glEnd()
 
-    glBegin(GL_POLYGON)  # left face
+    glBegin(GL_POLYGON)
     glNormal3f(-1.0, 0.0, 0.0)
-    glTexCoord2f(0, 0)
     glVertex3f(x1, y1, z1)
-    glTexCoord2f(0, 1)
     glVertex3f(x1, y1, z2)
-    glTexCoord2f(1, 1)
     glVertex3f(x1, y2, z2)
-    glTexCoord2f(1, 0)
     glVertex3f(x1, y2, z1)
     glEnd()
 
-    glBegin(GL_POLYGON)  # right face
+    glBegin(GL_POLYGON)
     glNormal3f(1.0, 0.0, 0.0)
-    glTexCoord2f(0, 1)
     glVertex3f(x2, y1, z2)
-    glTexCoord2f(0, 0)
     glVertex3f(x2, y1, z1)
-    glTexCoord2f(1, 0)
     glVertex3f(x2, y2, z1)
-    glTexCoord2f(1, 1)
     glVertex3f(x2, y2, z2)
     glEnd()
 
-    glBegin(GL_POLYGON)  # top face
+    glBegin(GL_POLYGON)
     glNormal3f(0.0, 1.0, 0.0)
-    glTexCoord2f(0, 1)
     glVertex3f(x1, y2, z2)
-    glTexCoord2f(1, 1)
     glVertex3f(x2, y2, z2)
-    glTexCoord2f(1, 0)
     glVertex3f(x2, y2, z1)
-    glTexCoord2f(0, 0)
     glVertex3f(x1, y2, z1)
     glEnd()
 
-    glBegin(GL_POLYGON)  # bottom face
+    glBegin(GL_POLYGON)
     glNormal3f(0.0, -1.0, 0.0)
-    glTexCoord2f(1, 1)
     glVertex3f(x2, y1, z2)
-    glTexCoord2f(1, 0)
     glVertex3f(x1, y1, z2)
-    glTexCoord2f(0, 0)
     glVertex3f(x1, y1, z1)
-    glTexCoord2f(0, 1)
     glVertex3f(x2, y1, z1)
     glEnd()
 
 
-def loadTexture(fileName):
-    image = Image.open(fileName)
-    width = image.size[0]
-    height = image.size[1]
-    image = image.tostring("raw", "RGBX", 0, -1)
-    texture = glGenTextures(1)
+def draw_cylinder(radius, height, num_slices):
+    """
+    Draws cylinder
+    :param radius:
+    :param height:
+    :param num_slices:
+    :return:
+    """
+    r = radius
+    h = height
+    n = float(num_slices)
 
-    glBindTexture(GL_TEXTURE_2D, texture)  # 2d texture (x and y size)
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-    gluBuild2DMipmaps(GL_TEXTURE_2D, 3, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image)
+    circle_pts = []
+    for i in range(int(n) + 1):
+        angle = 2 * math.pi * (i / n)
+        x = r * math.cos(angle)
+        y = r * math.sin(angle)
+        pt = (x, y)
+        circle_pts.append(pt)
 
-    return texture
+    glBegin(GL_TRIANGLE_FAN)
+    glNormal3f(0.0, 0.0, 1.0)
+    glColor(1, 0, 0)
+    glVertex(0, 0, h / 2.0)
+    for (x, y) in circle_pts:
+        z = h / 2.0
+        glNormal3f(0.0, 0.0, 1.0)
+        glVertex(x, y, z)
+    glEnd()
+
+    glBegin(GL_TRIANGLE_FAN)
+    glNormal3f(0.0, 0.0, -1.0)
+    glColor(0, 0, 1)
+    glVertex(0, 0, h / 2.0)
+    for (x, y) in circle_pts:
+        z = -h / 2.0
+        glNormal3f(0.0, 0.0, -1.0)
+        glVertex(x, y, z)
+    glEnd()
+
+    glBegin(GL_TRIANGLE_STRIP)
+    glColor(0, 1, 0)
+    for (x, y) in circle_pts:
+        z = h / 2.0
+        glNormal3f(x, y, 0.0)
+        glVertex(x, y, z)
+        glVertex(x, y, -z)
+    glEnd()
 
 
 def init():
-    glClearColor(0.0, 0.0, 0.0, 0.0)
+    """
+    Initializes glut
+    :return:
+    """
+    glClearColor(0.6, 0.6, 0.6, 0.0)
     glClearDepth(1.0)
     glDepthFunc(GL_LEQUAL)
     glEnable(GL_DEPTH_TEST)
-    glEnable(GL_TEXTURE_2D)
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
+    glEnable(GL_LIGHTING)
+    glEnable(GL_LIGHT0)
+
+    light_pos = [0.5, 1.0, 1.0, 0.0]
+    glLightfv(GL_LIGHT0, GL_POSITION, light_pos)
+
+    cyan = [0.0, 0.8, 0.8, 1.0]
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, cyan)
+
 
 def reshape(width, height):
+    """
+    Re-sets up when window size is changed
+    :param width:
+    :param height:
+    :return:
+    """
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
+
     gluPerspective(60.0, float(width) / float(height), 1.0, 60.0)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    gluLookAt(0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0)
 
 
 def display():
+    """
+    Renders scene
+    :return:
+    """
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    gluLookAt(0, 0, 0, 1, 1, 1, 0, 1, 0)
-    glTranslatef(4, 4, 4)
-    glRotatef(angle2, 1, -1, 0)
-    glTranslatef(d - 1.5, d - 1.5, d - 1.5)
-    glTranslatef(1.5, 1.5, 1.5)  # move cube from the center
-    glRotatef(angle, 1.0, 1.0, 0.0)
-    glTranslatef(-1.5, -1.5, -1.5)  # move cube into the center
-    drawBox(1, 2, 1, 2, 1, 2)
+    gluLookAt(6, 5, 5, 0, 0, 0, 0, 0, 1)
+
+    glRotatef(rot_angle, 1, -1, 0)
+
+    drawBox(-1, 1, -3, -1, -1, 1)
+    draw_cylinder(1, 2, 20)
 
     glutSwapBuffers()
 
 
 def keyPressed(*args):
+    """
+    Finish when ESC is pressed
+    :param args:
+    :return:
+    """
     if args[0] == '\033':
         sys.exit()
 
 
 def animate():
-    global angle, angle2
+    """
+    Changes the global rot_angle to be used in display method
+    :return:
+    """
+    global rot_angle
 
-    angle = 0.04 * glutGet(GLUT_ELAPSED_TIME)
-    angle2 = 0.01 * glutGet(GLUT_ELAPSED_TIME)
+    rot_angle = 0.04 * glutGet(GLUT_ELAPSED_TIME)
 
     glutPostRedisplay()
 
 
 def main():
-    global texture
-
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
-    glutInitWindowSize(500, 500)
+    glutInitWindowSize(640, 480)
     glutInitWindowPosition(0, 0)
 
-    glutCreateWindow("Simple PyOpenGL example")
+    glutCreateWindow("Lab 7. Variant 10.")
     glutDisplayFunc(display)
     glutIdleFunc(animate)
     glutReshapeFunc(reshape)
     glutKeyboardFunc(keyPressed)
     init()
 
-    texture = loadTexture("../../Textures/block.bmp")
-
     glutMainLoop()
 
 
-print
-"Hit ESC key to quit."
 main()
