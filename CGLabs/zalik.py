@@ -30,13 +30,13 @@ def process_image(impage_path, serpia_depth, add_noise):
             avrg = (int(b) + int(g) + int(r)) / 3
 
             if add_noise:
-                b = min(avrg + gaussian_noise[y, x] * 2, 255)
+                b = min(avrg, 255)
                 g = min(avrg + gaussian_noise[y, x], 255)
-                r = min(avrg, 255)
+                r = min(avrg + gaussian_noise[y, x] * 2, 255)
             else:
-                b = min(avrg + serpia_depth * 2, 255)
+                b = min(avrg, 255)
                 g = min(avrg + serpia_depth, 255)
-                r = min(avrg, 255)
+                r = min(avrg + serpia_depth * 2, 255)
             image[y, x] = (b, g, r)
 
     head, tail = ntpath.split(impage_path)
